@@ -1,4 +1,3 @@
-import React from 'react';
 import { X, Navigation, Hand, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatCoordinates } from '@/lib/utils';

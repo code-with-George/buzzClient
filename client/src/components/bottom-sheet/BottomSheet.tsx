@@ -18,6 +18,7 @@ export function BottomSheet() {
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [sheetHeight, setSheetHeight] = useState(COLLAPSED_HEIGHT);
   const [isDragging, setIsDragging] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const sheetRef = useRef<HTMLDivElement>(null);
   const dragStartY = useRef(0);
   const dragStartHeight = useRef(0);
@@ -37,11 +38,24 @@ export function BottomSheet() {
     debouncedSetQuery(searchQuery);
   }, [searchQuery, debouncedSetQuery]);
 
-  // Search drones query
+  // Get all drones query (for when search is focused but empty)
+  const allDrones = trpc.drones.getAll.useQuery(undefined, {
+    enabled: isSearchFocused,
+  });
+
+  // Search drones query (for filtering)
   const searchResults = trpc.drones.search.useQuery(
     { query: debouncedQuery },
     { enabled: debouncedQuery.length > 0 }
   );
+
+  // Determine which drones to show
+  const dronesToShow = debouncedQuery.length > 0 
+    ? searchResults.data || [] 
+    : allDrones.data || [];
+  const isLoadingDrones = debouncedQuery.length > 0 
+    ? searchResults.isLoading 
+    : allDrones.isLoading;
 
   // Handle drag start
   const handleDragStart = useCallback((clientY: number) => {
@@ -162,10 +176,19 @@ export function BottomSheet() {
           onChange={(e) => setSearchQuery(e.target.value)}
           icon={<Search className="h-4 w-4" />}
           onFocus={() => {
+            setIsSearchFocused(true);
             if (!isExpanded) {
               setSheetHeight(maxHeight);
               dispatch({ type: 'SET_BOTTOM_SHEET_EXPANDED', payload: true });
             }
+          }}
+          onBlur={() => {
+            // Small delay to allow click events on search results to fire first
+            setTimeout(() => {
+              setIsSearchFocused(false);
+              setSearchQuery('');
+              setDebouncedQuery('');
+            }, 150);
           }}
         />
       </div>
@@ -173,11 +196,11 @@ export function BottomSheet() {
       {/* Content */}
       <ScrollArea className="flex-1" style={{ height: sheetHeight - 130 }}>
         <div className="px-4 pb-4">
-          {/* Search results */}
-          {debouncedQuery.length > 0 ? (
+          {/* Show drone list when search is focused, otherwise show pinned/history */}
+          {isSearchFocused ? (
             <DroneSearchResults
-              results={searchResults.data || []}
-              isLoading={searchResults.isLoading}
+              results={dronesToShow}
+              isLoading={isLoadingDrones}
               query={debouncedQuery}
             />
           ) : (

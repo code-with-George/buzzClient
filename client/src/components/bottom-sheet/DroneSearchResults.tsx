@@ -70,7 +70,9 @@ export function DroneSearchResults({ results, isLoading, query }: DroneSearchRes
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <Loader2 className="h-8 w-8 text-buzz-purple animate-spin mb-3" />
-        <p className="text-sm text-muted-foreground">Searching fleet...</p>
+        <p className="text-sm text-muted-foreground">
+          {query ? 'Searching fleet...' : 'Loading drones...'}
+        </p>
       </div>
     );
   }
@@ -81,20 +83,22 @@ export function DroneSearchResults({ results, isLoading, query }: DroneSearchRes
         <SearchX className="h-12 w-12 text-muted-foreground mb-3" />
         <p className="text-sm text-muted-foreground mb-1">No drones found</p>
         <p className="text-xs text-muted-foreground">
-          Try searching with a different name or ID
+          {query ? 'Try searching with a different name or ID' : 'No drones available'}
         </p>
       </div>
     );
   }
 
+  const isShowingAll = !query;
+
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Search Results
+          {isShowingAll ? 'Available Drones' : 'Search Results'}
         </span>
         <span className="text-xs text-muted-foreground">
-          {results.length} found
+          {results.length} {isShowingAll ? 'drones' : 'found'}
         </span>
       </div>
 

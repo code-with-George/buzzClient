@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { X, MapPin, Loader2, Rocket, Bookmark } from 'lucide-react';
 import { useApp } from '@/store/AppContext';
 import { Button } from '@/components/ui/button';
@@ -141,9 +141,18 @@ export function ConfigurationForm() {
     }
   };
 
+  // Check if we're in placement mode (user is selecting location on map)
+  const isInPlacementMode = state.placementMode !== 'none';
+
   return (
     <>
-      <div className="absolute inset-x-0 bottom-0 z-30 bg-buzz-dark-card rounded-t-3xl border-t border-buzz-dark-border shadow-2xl safe-area-bottom animate-slide-up">
+      <div 
+        className={cn(
+          "absolute inset-x-0 bottom-0 z-30 bg-buzz-dark-card rounded-t-3xl border-t border-buzz-dark-border shadow-2xl safe-area-bottom",
+          "transition-transform duration-300 ease-out",
+          isInPlacementMode ? "translate-y-full" : "translate-y-0"
+        )}
+      >
         {/* Handle */}
         <div className="flex justify-center py-3">
           <div className="w-12 h-1.5 bg-buzz-dark-border rounded-full" />
