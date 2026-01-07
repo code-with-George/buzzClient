@@ -74,29 +74,25 @@
   }
 }
 
-/* MapLibre overrides for dark mode */
-.maplibregl-map {
+/* OpenLayers overrides for dark mode */
+.ol-viewport {
   font-family: inherit;
 }
 
-.maplibregl-popup-content {
+.ol-popup {
   @apply bg-buzz-dark-card text-foreground border border-buzz-dark-border rounded-lg shadow-xl;
   padding: 0 !important;
 }
 
-.maplibregl-popup-tip {
-  border-top-color: hsl(240 10% 8%) !important;
-}
-
-.maplibregl-ctrl-group {
+.ol-control {
   @apply bg-buzz-dark-card border border-buzz-dark-border rounded-lg overflow-hidden;
 }
 
-.maplibregl-ctrl-group button {
+.ol-control button {
   @apply bg-buzz-dark-card text-foreground border-none;
 }
 
-.maplibregl-ctrl-group button:hover {
+.ol-control button:hover {
   @apply bg-buzz-dark-border;
 }
 

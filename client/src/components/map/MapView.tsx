@@ -1,26 +1,41 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
-import maplibregl from 'maplibre-gl';
+import { useRef, useEffect, useState, useCallback } from 'react';
+import Map from 'ol/Map';
+import View from 'ol/View';
+import TileLayer from 'ol/layer/Tile';
+import VectorLayer from 'ol/layer/Vector';
+import VectorSource from 'ol/source/Vector';
+import XYZ from 'ol/source/XYZ';
+import ImageLayer from 'ol/layer/Image';
+import ImageStatic from 'ol/source/ImageStatic';
+import { fromLonLat, toLonLat } from 'ol/proj';
+import { Feature } from 'ol';
+import { Point } from 'ol/geom';
+import { Style, Fill, Stroke, Icon } from 'ol/style';
+import { circular } from 'ol/geom/Polygon';
 import { Layers, Crosshair } from 'lucide-react';
 import { useApp } from '@/store/AppContext';
 import { Button } from '@/components/ui/button';
+import 'ol/ol.css';
 
-// Israel bounds
-const ISRAEL_BOUNDS: [[number, number], [number, number]] = [
-  [34.2, 29.5], // Southwest
-  [35.9, 33.3], // Northeast
-];
+// Israel bounds in EPSG:4326 (lon, lat)
+const ISRAEL_BOUNDS = {
+  minLon: 34.2,
+  minLat: 29.5,
+  maxLon: 35.9,
+  maxLat: 33.3,
+};
 
 // Israel center
 const ISRAEL_CENTER: [number, number] = [35.0, 31.5];
 
 export function MapView() {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<maplibregl.Map | null>(null);
-  const userMarker = useRef<maplibregl.Marker | null>(null);
-  const controllerMarker = useRef<maplibregl.Marker | null>(null);
-  const droneMarker = useRef<maplibregl.Marker | null>(null);
-  const radiusCircle = useRef<string | null>(null);
-  const resultOverlay = useRef<string | null>(null);
+  const map = useRef<Map | null>(null);
+  const userMarkerLayer = useRef<VectorLayer<VectorSource> | null>(null);
+  const controllerMarkerLayer = useRef<VectorLayer<VectorSource> | null>(null);
+  const droneMarkerLayer = useRef<VectorLayer<VectorSource> | null>(null);
+  const radiusLayer = useRef<VectorLayer<VectorSource> | null>(null);
+  const resultOverlayLayer = useRef<ImageLayer<ImageStatic> | null>(null);
 
   const { state, dispatch } = useApp();
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -29,70 +44,78 @@ export function MapView() {
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
 
-    map.current = new maplibregl.Map({
-      container: mapContainer.current,
-      style: {
-        version: 8,
-        sources: {
-          'carto-dark': {
-            type: 'raster',
-            tiles: [
+    // Create the map
+    map.current = new Map({
+      target: mapContainer.current,
+      layers: [
+        new TileLayer({
+          source: new XYZ({
+            urls: [
               'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
               'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
               'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
             ],
-            tileSize: 256,
-            attribution: '© CARTO',
-          },
-        },
-        layers: [
-          {
-            id: 'carto-dark-layer',
-            type: 'raster',
-            source: 'carto-dark',
-            minzoom: 0,
-            maxzoom: 20,
-          },
+            attributions: '© CARTO',
+          }),
+        }),
+      ],
+      view: new View({
+        center: fromLonLat(ISRAEL_CENTER),
+        zoom: 7,
+        extent: [
+          ...fromLonLat([ISRAEL_BOUNDS.minLon, ISRAEL_BOUNDS.minLat]),
+          ...fromLonLat([ISRAEL_BOUNDS.maxLon, ISRAEL_BOUNDS.maxLat]),
         ],
-        glyphs: 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf',
-      },
-      center: ISRAEL_CENTER,
-      zoom: 7,
-      maxBounds: ISRAEL_BOUNDS,
-      attributionControl: false,
+      }),
+      controls: [],
     });
 
-    map.current.on('load', () => {
-      setMapLoaded(true);
+    // Create vector layers for markers
+    userMarkerLayer.current = new VectorLayer({
+      source: new VectorSource(),
+      zIndex: 100,
     });
 
-    // Handle map click for placement mode
-    map.current.on('click', (e) => {
-      const coords = { lat: e.lngLat.lat, lng: e.lngLat.lng };
-      
-      // Dispatch based on current placement mode
-      if (state.placementMode === 'controller') {
-        dispatch({ type: 'SET_CONTROLLER_LOCATION', payload: coords });
-      } else if (state.placementMode === 'drone') {
-        dispatch({ type: 'SET_DRONE_LOCATION', payload: coords });
-      }
+    controllerMarkerLayer.current = new VectorLayer({
+      source: new VectorSource(),
+      zIndex: 101,
     });
+
+    droneMarkerLayer.current = new VectorLayer({
+      source: new VectorSource(),
+      zIndex: 102,
+    });
+
+    radiusLayer.current = new VectorLayer({
+      source: new VectorSource(),
+      zIndex: 50,
+    });
+
+    map.current.addLayer(radiusLayer.current);
+    map.current.addLayer(userMarkerLayer.current);
+    map.current.addLayer(controllerMarkerLayer.current);
+    map.current.addLayer(droneMarkerLayer.current);
+
+    setMapLoaded(true);
 
     return () => {
       if (map.current) {
-        map.current.remove();
+        map.current.setTarget(undefined);
         map.current = null;
       }
     };
   }, []);
 
-  // Update placement mode click handler
+  // Handle map click for placement mode
   useEffect(() => {
     if (!map.current) return;
 
-    const handleClick = (e: maplibregl.MapMouseEvent) => {
-      const coords = { lat: e.lngLat.lat, lng: e.lngLat.lng };
+    const handleClick = (e: { coordinate: number[] }) => {
+      if (state.placementMode === 'none') return;
       
+      const lonLat = toLonLat(e.coordinate);
+      const coords = { lat: lonLat[1], lng: lonLat[0] };
+
       if (state.placementMode === 'controller') {
         dispatch({ type: 'SET_CONTROLLER_LOCATION', payload: coords });
       } else if (state.placementMode === 'drone') {
@@ -101,175 +124,176 @@ export function MapView() {
     };
 
     map.current.on('click', handleClick);
-    
+
     return () => {
-      map.current?.off('click', handleClick);
+      map.current?.un('click', handleClick);
     };
   }, [state.placementMode, dispatch]);
 
   // Update cursor based on placement mode
   useEffect(() => {
-    if (!map.current) return;
-    
+    if (!map.current || !mapContainer.current) return;
+
     if (state.placementMode !== 'none') {
-      map.current.getCanvas().style.cursor = 'crosshair';
+      mapContainer.current.style.cursor = 'crosshair';
     } else {
-      map.current.getCanvas().style.cursor = '';
+      mapContainer.current.style.cursor = '';
     }
   }, [state.placementMode]);
 
   // Update user location marker
   useEffect(() => {
-    if (!map.current || !mapLoaded || !state.userLocation) return;
+    if (!map.current || !mapLoaded || !state.userLocation || !userMarkerLayer.current) return;
 
-    if (userMarker.current) {
-      userMarker.current.setLngLat([state.userLocation.lng, state.userLocation.lat]);
-    } else {
-      // Create user location marker
-      const el = document.createElement('div');
-      el.className = 'user-location-marker';
-      el.innerHTML = `
-        <div class="relative">
-          <div class="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-30"></div>
-          <div class="relative h-4 w-4 bg-blue-500 rounded-full border-2 border-white shadow-lg"></div>
-        </div>
-      `;
+    const source = userMarkerLayer.current.getSource();
+    if (!source) return;
 
-      userMarker.current = new maplibregl.Marker({ element: el })
-        .setLngLat([state.userLocation.lng, state.userLocation.lat])
-        .addTo(map.current);
+    source.clear();
 
-      // Center map on user location
-      map.current.flyTo({
-        center: [state.userLocation.lng, state.userLocation.lat],
-        zoom: 14,
-        duration: 1500,
-      });
-    }
+    // Create user location feature with pulsing effect style
+    const userFeature = new Feature({
+      geometry: new Point(fromLonLat([state.userLocation.lng, state.userLocation.lat])),
+    });
+
+    // Create SVG for user marker
+    const userMarkerSvg = `
+      <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="10" fill="#3b82f6" opacity="0.3"/>
+        <circle cx="12" cy="12" r="6" fill="#3b82f6" stroke="white" stroke-width="2"/>
+      </svg>
+    `;
+
+    userFeature.setStyle(
+      new Style({
+        image: new Icon({
+          src: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(userMarkerSvg),
+          scale: 1,
+        }),
+      })
+    );
+
+    source.addFeature(userFeature);
+
+    // Center map on user location
+    map.current.getView().animate({
+      center: fromLonLat([state.userLocation.lng, state.userLocation.lat]),
+      zoom: 14,
+      duration: 1500,
+    });
   }, [state.userLocation, mapLoaded]);
 
   // Update controller marker
   useEffect(() => {
-    if (!map.current || !mapLoaded) return;
+    if (!map.current || !mapLoaded || !controllerMarkerLayer.current) return;
+
+    const source = controllerMarkerLayer.current.getSource();
+    if (!source) return;
+
+    source.clear();
 
     if (state.controllerConfig.location) {
       const { lat, lng } = state.controllerConfig.location;
 
-      if (controllerMarker.current) {
-        controllerMarker.current.setLngLat([lng, lat]);
-      } else {
-        const el = document.createElement('div');
-        el.className = 'controller-marker';
-        el.innerHTML = `
-          <div class="relative flex items-center justify-center">
-            <div class="h-10 w-10 bg-buzz-purple rounded-lg border-2 border-white shadow-xl flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                <rect x="4" y="6" width="16" height="12" rx="2"/>
-                <circle cx="8" cy="12" r="2"/>
-                <circle cx="16" cy="12" r="2"/>
-                <rect x="10" y="3" width="4" height="3" rx="1"/>
-              </svg>
-            </div>
-            <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-l-transparent border-r-transparent border-t-buzz-purple"></div>
-          </div>
-        `;
+      const controllerFeature = new Feature({
+        geometry: new Point(fromLonLat([lng, lat])),
+      });
 
-        controllerMarker.current = new maplibregl.Marker({ element: el })
-          .setLngLat([lng, lat])
-          .addTo(map.current);
-      }
-    } else if (controllerMarker.current) {
-      controllerMarker.current.remove();
-      controllerMarker.current = null;
+      // Controller marker SVG
+      const controllerSvg = `
+        <svg width="48" height="56" viewBox="0 0 48 56" xmlns="http://www.w3.org/2000/svg">
+          <rect x="4" y="4" width="40" height="40" rx="8" fill="#a855f7" stroke="white" stroke-width="2"/>
+          <rect x="14" y="14" width="8" height="6" rx="1" fill="white"/>
+          <rect x="26" y="14" width="8" height="6" rx="1" fill="white"/>
+          <circle cx="18" cy="30" r="4" fill="white"/>
+          <circle cx="30" cy="30" r="4" fill="white"/>
+          <polygon points="24,44 18,52 30,52" fill="#a855f7"/>
+        </svg>
+      `;
+
+      controllerFeature.setStyle(
+        new Style({
+          image: new Icon({
+            src: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(controllerSvg),
+            scale: 0.85,
+            anchor: [0.5, 1],
+          }),
+        })
+      );
+
+      source.addFeature(controllerFeature);
     }
   }, [state.controllerConfig.location, mapLoaded]);
 
   // Update drone marker and radius circle
   useEffect(() => {
-    if (!map.current || !mapLoaded) return;
+    if (!map.current || !mapLoaded || !droneMarkerLayer.current || !radiusLayer.current) return;
 
-    // Remove existing circle and overlay
-    if (radiusCircle.current && map.current.getLayer(radiusCircle.current)) {
-      map.current.removeLayer(radiusCircle.current);
-      map.current.removeLayer(`${radiusCircle.current}-outline`);
-      map.current.removeSource(radiusCircle.current);
-    }
+    const droneSource = droneMarkerLayer.current.getSource();
+    const radiusSource = radiusLayer.current.getSource();
+    if (!droneSource || !radiusSource) return;
+
+    droneSource.clear();
+    radiusSource.clear();
 
     if (state.droneConfig.location) {
       const { lat, lng } = state.droneConfig.location;
       const radius = state.droneConfig.radius;
 
       // Create radius circle
-      const circleId = `drone-radius-${Date.now()}`;
-      radiusCircle.current = circleId;
+      const circleGeom = circular([lng, lat], radius, 64);
+      circleGeom.transform('EPSG:4326', 'EPSG:3857');
 
-      // Create a GeoJSON circle
-      const circleGeoJSON = createGeoJSONCircle([lng, lat], radius);
-
-      map.current.addSource(circleId, {
-        type: 'geojson',
-        data: circleGeoJSON,
+      const circleFeature = new Feature({
+        geometry: circleGeom,
       });
 
-      // Add fill layer
-      map.current.addLayer({
-        id: circleId,
-        type: 'fill',
-        source: circleId,
-        paint: {
-          'fill-color': state.calculationResult ? 'transparent' : '#a855f7',
-          'fill-opacity': state.calculationResult ? 0 : 0.15,
-        },
+      circleFeature.setStyle(
+        new Style({
+          fill: new Fill({
+            color: state.calculationResult ? 'transparent' : 'rgba(168, 85, 247, 0.15)',
+          }),
+          stroke: new Stroke({
+            color: '#a855f7',
+            width: 2,
+          }),
+        })
+      );
+
+      radiusSource.addFeature(circleFeature);
+
+      // Create drone marker
+      const droneFeature = new Feature({
+        geometry: new Point(fromLonLat([lng, lat])),
       });
 
-      // Add outline
-      map.current.addLayer({
-        id: `${circleId}-outline`,
-        type: 'line',
-        source: circleId,
-        paint: {
-          'line-color': '#a855f7',
-          'line-width': 2,
-          'line-opacity': 0.8,
-        },
-      });
+      const droneName = state.selectedDrone?.name || 'DRONE-01';
 
-      // Update or create drone marker
-      if (droneMarker.current) {
-        droneMarker.current.setLngLat([lng, lat]);
-      } else {
-        const el = document.createElement('div');
-        el.className = 'drone-marker';
-        el.innerHTML = `
-          <div class="relative flex flex-col items-center">
-            <div class="px-3 py-1 bg-buzz-dark-card/90 rounded-lg border border-buzz-dark-border text-xs font-semibold mb-2 flex items-center gap-2">
-              <span class="h-2 w-2 rounded-full bg-buzz-green"></span>
-              ${state.selectedDrone?.name || 'DRONE-01'}
-            </div>
-            <div class="relative">
-              <div class="absolute inset-0 border-2 border-buzz-purple rounded-lg animate-pulse opacity-50"></div>
-              <div class="h-12 w-12 bg-buzz-dark-card rounded-lg border-2 border-buzz-purple flex items-center justify-center shadow-xl shadow-buzz-purple/30">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 4L15 7H9L12 4Z" fill="#a855f7"/>
-                  <rect x="9" y="7" width="6" height="6" rx="1" fill="#a855f7"/>
-                  <path d="M12 20L9 17H15L12 20Z" fill="#a855f7"/>
-                  <rect x="4" y="9" width="3" height="3" rx="0.5" fill="#a855f7" opacity="0.6"/>
-                  <rect x="17" y="9" width="3" height="3" rx="0.5" fill="#a855f7" opacity="0.6"/>
-                </svg>
-              </div>
-            </div>
-          </div>
-        `;
+      // Drone marker SVG with label
+      const droneSvg = `
+        <svg width="100" height="80" viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg">
+          <rect x="10" y="0" width="80" height="24" rx="6" fill="rgba(30, 30, 40, 0.9)" stroke="#3f3f5f" stroke-width="1"/>
+          <circle cx="22" cy="12" r="4" fill="#22c55e"/>
+          <text x="50" y="16" text-anchor="middle" fill="white" font-size="10" font-family="system-ui, sans-serif" font-weight="600">${droneName}</text>
+          <rect x="28" y="32" width="44" height="44" rx="8" fill="#1e1e28" stroke="#a855f7" stroke-width="2"/>
+          <path d="M50 38 L58 46 L42 46 Z" fill="#a855f7"/>
+          <rect x="42" y="46" width="16" height="16" rx="2" fill="#a855f7"/>
+          <path d="M50 72 L42 64 L58 64 Z" fill="#a855f7"/>
+          <rect x="20" y="48" width="8" height="8" rx="1" fill="#a855f7" opacity="0.6"/>
+          <rect x="72" y="48" width="8" height="8" rx="1" fill="#a855f7" opacity="0.6"/>
+        </svg>
+      `;
 
-        droneMarker.current = new maplibregl.Marker({ element: el })
-          .setLngLat([lng, lat])
-          .addTo(map.current);
-      }
-    } else {
-      if (droneMarker.current) {
-        droneMarker.current.remove();
-        droneMarker.current = null;
-      }
+      droneFeature.setStyle(
+        new Style({
+          image: new Icon({
+            src: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(droneSvg),
+            scale: 1,
+            anchor: [0.5, 0.7],
+          }),
+        })
+      );
+
+      droneSource.addFeature(droneFeature);
     }
   }, [state.droneConfig.location, state.droneConfig.radius, state.calculationResult, state.selectedDrone?.name, mapLoaded]);
 
@@ -278,49 +302,40 @@ export function MapView() {
     if (!map.current || !mapLoaded || !state.droneConfig.location) return;
 
     // Remove existing overlay
-    if (resultOverlay.current && map.current.getLayer(resultOverlay.current)) {
-      map.current.removeLayer(resultOverlay.current);
-      map.current.removeSource(resultOverlay.current);
+    if (resultOverlayLayer.current) {
+      map.current.removeLayer(resultOverlayLayer.current);
+      resultOverlayLayer.current = null;
     }
 
     if (state.calculationResult) {
       const { lat, lng } = state.droneConfig.location;
       const radius = state.droneConfig.radius;
-      const overlayId = `result-overlay-${Date.now()}`;
-      resultOverlay.current = overlayId;
 
       // Calculate bounds for the image
       const bounds = calculateBoundsFromRadius(lat, lng, radius);
 
-      // Add the image as a raster source
-      map.current.addSource(overlayId, {
-        type: 'image',
-        url: state.calculationResult.imageData,
-        coordinates: [
-          [bounds.west, bounds.north],
-          [bounds.east, bounds.north],
-          [bounds.east, bounds.south],
-          [bounds.west, bounds.south],
-        ],
+      resultOverlayLayer.current = new ImageLayer({
+        source: new ImageStatic({
+          url: state.calculationResult.imageData,
+          imageExtent: [
+            ...fromLonLat([bounds.west, bounds.south]),
+            ...fromLonLat([bounds.east, bounds.north]),
+          ],
+        }),
+        opacity: 0.8,
+        zIndex: 60,
       });
 
-      map.current.addLayer({
-        id: overlayId,
-        type: 'raster',
-        source: overlayId,
-        paint: {
-          'raster-opacity': 0.8,
-        },
-      });
+      map.current.addLayer(resultOverlayLayer.current);
     }
   }, [state.calculationResult, state.droneConfig.location, state.droneConfig.radius, mapLoaded]);
 
   // Center on user location
   const handleCenterOnUser = useCallback(() => {
     if (!map.current || !state.userLocation) return;
-    
-    map.current.flyTo({
-      center: [state.userLocation.lng, state.userLocation.lat],
+
+    map.current.getView().animate({
+      center: fromLonLat([state.userLocation.lng, state.userLocation.lat]),
       zoom: 14,
       duration: 1000,
     });
@@ -367,30 +382,6 @@ export function MapView() {
   );
 }
 
-// Helper function to create a GeoJSON circle
-function createGeoJSONCircle(center: [number, number], radiusMeters: number, points: number = 64): GeoJSON.Feature<GeoJSON.Polygon> {
-  const coords: [number, number][] = [];
-  const distanceX = radiusMeters / (111320 * Math.cos((center[1] * Math.PI) / 180));
-  const distanceY = radiusMeters / 110540;
-
-  for (let i = 0; i < points; i++) {
-    const theta = (i / points) * (2 * Math.PI);
-    const x = distanceX * Math.cos(theta);
-    const y = distanceY * Math.sin(theta);
-    coords.push([center[0] + x, center[1] + y]);
-  }
-  coords.push(coords[0]); // Close the polygon
-
-  return {
-    type: 'Feature',
-    properties: {},
-    geometry: {
-      type: 'Polygon',
-      coordinates: [coords],
-    },
-  };
-}
-
 // Calculate bounds from center and radius
 function calculateBoundsFromRadius(lat: number, lng: number, radiusMeters: number) {
   const distanceX = radiusMeters / (111320 * Math.cos((lat * Math.PI) / 180));
@@ -403,4 +394,3 @@ function calculateBoundsFromRadius(lat: number, lng: number, radiusMeters: numbe
     west: lng - distanceX,
   };
 }
-
