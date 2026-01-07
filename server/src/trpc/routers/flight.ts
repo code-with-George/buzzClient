@@ -78,6 +78,74 @@ function generateMockCalculationImage(area: { lat: number; lng: number }[]): str
   return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
 }
 
+// Generate mock base64 image for eyesight/line-of-sight calculation
+function generateEyesightCalculationImage(area: { lat: number; lng: number }[]): string {
+  // Calculate bounds of the polygon
+  let minLat = Infinity, maxLat = -Infinity;
+  let minLng = Infinity, maxLng = -Infinity;
+  
+  for (const coord of area) {
+    minLat = Math.min(minLat, coord.lat);
+    maxLat = Math.max(maxLat, coord.lat);
+    minLng = Math.min(minLng, coord.lng);
+    maxLng = Math.max(maxLng, coord.lng);
+  }
+  
+  const size = 400;
+  const latRange = maxLat - minLat;
+  const lngRange = maxLng - minLng;
+  
+  // Convert polygon coordinates to SVG points
+  const svgPoints = area.map(coord => {
+    const x = ((coord.lng - minLng) / lngRange) * size;
+    const y = ((maxLat - coord.lat) / latRange) * size; // Flip Y axis
+    return `${x},${y}`;
+  }).join(' ');
+  
+  // Create SVG with eyesight/visibility visualization (blue tones)
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+      <defs>
+        <radialGradient id="eyesightGradient" cx="50%" cy="50%" r="70%" fx="50%" fy="50%">
+          <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:0.9" />
+          <stop offset="40%" style="stop-color:#06b6d4;stop-opacity:0.7" />
+          <stop offset="70%" style="stop-color:#8b5cf6;stop-opacity:0.5" />
+          <stop offset="100%" style="stop-color:#1e1e28;stop-opacity:0.3" />
+        </radialGradient>
+        <clipPath id="eyesightClip">
+          <polygon points="${svgPoints}" />
+        </clipPath>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      <g clip-path="url(#eyesightClip)">
+        <rect x="0" y="0" width="${size}" height="${size}" fill="url(#eyesightGradient)" />
+        <!-- Blind spots / obstructed areas -->
+        <ellipse cx="${size * 0.2}" cy="${size * 0.3}" rx="${size * 0.1}" ry="${size * 0.12}" fill="#1e1e28" opacity="0.8" />
+        <ellipse cx="${size * 0.75}" cy="${size * 0.65}" rx="${size * 0.08}" ry="${size * 0.1}" fill="#1e1e28" opacity="0.7" />
+        <circle cx="${size * 0.4}" cy="${size * 0.8}" r="${size * 0.05}" fill="#1e1e28" opacity="0.75" />
+        <ellipse cx="${size * 0.85}" cy="${size * 0.25}" rx="${size * 0.06}" ry="${size * 0.08}" fill="#1e1e28" opacity="0.65" />
+        <!-- Line of sight rays -->
+        <line x1="${size * 0.5}" y1="${size * 0.5}" x2="${size * 0.1}" y2="${size * 0.1}" stroke="#3b82f6" stroke-width="1" opacity="0.3" />
+        <line x1="${size * 0.5}" y1="${size * 0.5}" x2="${size * 0.9}" y2="${size * 0.1}" stroke="#3b82f6" stroke-width="1" opacity="0.3" />
+        <line x1="${size * 0.5}" y1="${size * 0.5}" x2="${size * 0.1}" y2="${size * 0.9}" stroke="#3b82f6" stroke-width="1" opacity="0.3" />
+        <line x1="${size * 0.5}" y1="${size * 0.5}" x2="${size * 0.9}" y2="${size * 0.9}" stroke="#3b82f6" stroke-width="1" opacity="0.3" />
+        <!-- Center eye indicator -->
+        <circle cx="${size * 0.5}" cy="${size * 0.5}" r="${size * 0.04}" fill="#3b82f6" filter="url(#glow)" />
+        <circle cx="${size * 0.5}" cy="${size * 0.5}" r="${size * 0.02}" fill="white" />
+      </g>
+      <polygon points="${svgPoints}" fill="none" stroke="#3b82f6" stroke-width="2" />
+    </svg>
+  `;
+  
+  return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+}
+
 export const flightRouter = router({
   // Calculate communication zones
   calculate: publicProcedure
@@ -88,6 +156,23 @@ export const flightRouter = router({
 
       // Generate mock image
       const imageData = generateMockCalculationImage(input.drone.area);
+
+      return {
+        success: true,
+        imageData,
+        calculatedAt: new Date().toISOString(),
+      };
+    }),
+
+  // Calculate eyesight/line-of-sight zones
+  calculateEyesight: publicProcedure
+    .input(configurationSchema)
+    .mutation(async ({ input }) => {
+      // Simulate calculation delay
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Generate eyesight visualization image
+      const imageData = generateEyesightCalculationImage(input.drone.area);
 
       return {
         success: true,

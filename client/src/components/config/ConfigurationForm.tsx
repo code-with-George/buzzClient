@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, MapPin, Loader2, Rocket, PenTool, Trash2 } from 'lucide-react';
+import { X, MapPin, Loader2, Rocket, PenTool, Trash2, Eye } from 'lucide-react';
 import { useApp } from '@/store/AppContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +25,7 @@ export function ConfigurationForm() {
   
   // Mutations
   const calculateMutation = trpc.flight.calculate.useMutation();
+  const calculateEyesightMutation = trpc.flight.calculateEyesight.useMutation();
 
   const controllerLocationSet = !!state.controllerConfig.location;
   const droneAreaSet = !!state.droneConfig.drawnArea && state.droneConfig.drawnArea.length > 2;
@@ -95,6 +96,44 @@ export function ConfigurationForm() {
       });
     } catch (error) {
       console.error('Calculation failed:', error);
+      dispatch({ type: 'SET_PHASE', payload: 'configuring' });
+      dispatch({ type: 'SET_CONFIG_FORM_OPEN', payload: true });
+    }
+  };
+
+  const handleEyesightSubmit = async () => {
+    if (!canSubmit || !state.selectedDrone || !state.droneConfig.drawnArea || !state.droneConfig.location) return;
+    
+    // Close form and show calculating
+    dispatch({ type: 'SET_CONFIG_FORM_OPEN', payload: false });
+    dispatch({ type: 'SET_PHASE', payload: 'calculating' });
+
+    try {
+      const result = await calculateEyesightMutation.mutateAsync({
+        droneId: state.selectedDrone.id,
+        droneName: state.selectedDrone.name,
+        controller: {
+          altitude: controllerAltitude,
+          lat: state.controllerConfig.location!.lat,
+          lng: state.controllerConfig.location!.lng,
+        },
+        drone: {
+          altitude: droneAltitude,
+          lat: state.droneConfig.location.lat,
+          lng: state.droneConfig.location.lng,
+          area: state.droneConfig.drawnArea,
+        },
+      });
+
+      dispatch({
+        type: 'SET_CALCULATION_RESULT',
+        payload: {
+          imageData: result.imageData,
+          calculatedAt: result.calculatedAt,
+        },
+      });
+    } catch (error) {
+      console.error('Eyesight calculation failed:', error);
       dispatch({ type: 'SET_PHASE', payload: 'configuring' });
       dispatch({ type: 'SET_CONFIG_FORM_OPEN', payload: true });
     }
@@ -276,24 +315,46 @@ export function ConfigurationForm() {
 
         {/* Actions */}
         <div className="px-5 pb-6 space-y-3">
-          <Button
-            onClick={handleSubmit}
-            size="xl"
-            className="w-full"
-            disabled={!canSubmit || calculateMutation.isPending}
-          >
-            {calculateMutation.isPending ? (
-              <>
-                <Loader2 className="ms-2 h-5 w-5 animate-spin" />
-                מחשב...
-              </>
-            ) : (
-              <>
-                <Rocket className="ms-2 h-5 w-5" />
-                הפעל מערכות
-              </>
-            )}
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              onClick={handleSubmit}
+              size="xl"
+              className="flex-1"
+              disabled={!canSubmit || calculateMutation.isPending || calculateEyesightMutation.isPending}
+            >
+              {calculateMutation.isPending ? (
+                <>
+                  <Loader2 className="ms-2 h-5 w-5 animate-spin" />
+                  מחשב...
+                </>
+              ) : (
+                <>
+                  <Rocket className="ms-2 h-5 w-5" />
+                  הפעל מערכות
+                </>
+              )}
+            </Button>
+
+            <Button
+              onClick={handleEyesightSubmit}
+              size="xl"
+              variant="secondary"
+              className="flex-1 border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400"
+              disabled={!canSubmit || calculateMutation.isPending || calculateEyesightMutation.isPending}
+            >
+              {calculateEyesightMutation.isPending ? (
+                <>
+                  <Loader2 className="ms-2 h-5 w-5 animate-spin" />
+                  מחשב...
+                </>
+              ) : (
+                <>
+                  <Eye className="ms-2 h-5 w-5" />
+                  קו ראייה
+                </>
+              )}
+            </Button>
+          </div>
 
           <button
             onClick={handleClose}
