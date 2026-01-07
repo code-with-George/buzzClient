@@ -99,16 +99,13 @@ export function PinnedDronesList() {
 
   return (
     <div className="mb-6">
-      <div className="flex items-center justify-between mb-3">
+      <div className="mb-3">
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           יחידות מוצמדות
         </span>
-        <button className="text-xs text-buzz-purple hover:text-buzz-purple-light transition-colors">
-          עריכה
-        </button>
       </div>
 
-      <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4">
+      <div className="flex flex-row-reverse gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4" dir="rtl">
         {pinnedDrones.data.map((drone) => {
           const batteryColor = getBatteryColor(drone.battery_level);
           const isLowBattery = drone.battery_level < 20;

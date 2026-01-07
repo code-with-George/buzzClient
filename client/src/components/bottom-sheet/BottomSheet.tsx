@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Search, SlidersHorizontal, Crosshair } from 'lucide-react';
+import { Search, Crosshair } from 'lucide-react';
 import { useApp } from '@/store/AppContext';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -181,11 +181,8 @@ export function BottomSheet() {
       </div>
 
       {/* Header */}
-      <div className="px-4 pb-3 flex items-center justify-between">
+      <div className="px-4 pb-3">
         <h2 className="text-xl font-bold tracking-tight">מרכז הפיקוד</h2>
-        <button className="p-2 hover:bg-buzz-dark-border rounded-lg transition-colors">
-          <SlidersHorizontal className="h-5 w-5 text-muted-foreground" />
-        </button>
       </div>
 
       {/* Search input */}

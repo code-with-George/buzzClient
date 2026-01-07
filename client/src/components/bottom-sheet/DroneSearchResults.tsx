@@ -125,7 +125,7 @@ export function DroneSearchResults({ results, isLoading, query }: DroneSearchRes
               key={drone.id}
               onClick={() => handleSelectDrone(drone)}
               className={cn(
-                'w-full flex items-center gap-3 p-3 rounded-xl transition-all tap-target',
+                'w-full flex flex-row-reverse items-center gap-3 p-3 rounded-xl transition-all tap-target',
                 'bg-buzz-dark border border-transparent hover:border-buzz-purple',
                 'focus:outline-none focus:ring-2 focus:ring-buzz-purple focus:ring-offset-2 focus:ring-offset-buzz-dark-card'
               )}
