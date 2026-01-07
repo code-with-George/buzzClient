@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { X, Rocket, Loader2, Check, XCircle, Shield } from 'lucide-react';
 import { useApp } from '@/store/AppContext';
 import { Button } from '@/components/ui/button';
@@ -9,14 +8,14 @@ import { cn } from '@/lib/utils';
 
 export function ResultActions() {
   const { state, dispatch } = useApp();
-  const [isRequestingApproval, setIsRequestingApproval] = useState(false);
+  const [, setIsRequestingApproval] = useState(false);
   
   const saveToHistory = trpc.flight.saveToHistory.useMutation();
   const requestApproval = trpc.flight.requestApproval.useMutation();
 
   // Handle cancel
   const handleCancel = async () => {
-    if (!state.selectedDrone || !state.controllerConfig.location || !state.droneConfig.location) {
+    if (!state.selectedDrone || !state.controllerConfig.location || !state.droneConfig.location || !state.droneConfig.drawnArea) {
       dispatch({ type: 'RESET_DEPLOYMENT' });
       return;
     }
@@ -32,7 +31,7 @@ export function ResultActions() {
       droneAltitude: state.droneConfig.altitude,
       droneLat: state.droneConfig.location.lat,
       droneLng: state.droneConfig.location.lng,
-      operationalRadius: state.droneConfig.radius,
+      operationalArea: state.droneConfig.drawnArea,
       status: 'Not Launched',
       controlCenterApproved: state.controlCenterStatus === 'approved' ? true : 
                              state.controlCenterStatus === 'not_approved' ? false : null,
@@ -68,7 +67,7 @@ export function ResultActions() {
 
   // Handle launch
   const handleLaunch = async () => {
-    if (!state.selectedDrone || !state.controllerConfig.location || !state.droneConfig.location) {
+    if (!state.selectedDrone || !state.controllerConfig.location || !state.droneConfig.location || !state.droneConfig.drawnArea) {
       return;
     }
 
@@ -83,7 +82,7 @@ export function ResultActions() {
       droneAltitude: state.droneConfig.altitude,
       droneLat: state.droneConfig.location.lat,
       droneLng: state.droneConfig.location.lng,
-      operationalRadius: state.droneConfig.radius,
+      operationalArea: state.droneConfig.drawnArea,
       status: 'Launched',
       controlCenterApproved: state.controlCenterStatus === 'approved' ? true : 
                              state.controlCenterStatus === 'not_approved' ? false : null,

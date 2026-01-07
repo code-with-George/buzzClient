@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { X, MapPin, Loader2, Rocket, Bookmark } from 'lucide-react';
+import { X, MapPin, Loader2, Rocket, Bookmark, PenTool, Trash2 } from 'lucide-react';
 import { useApp } from '@/store/AppContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { ControllerIcon, DroneIcon } from '@/components/icons/BuzzIcon';
 import { LocationPicker } from './LocationPicker';
@@ -20,7 +19,6 @@ export function ConfigurationForm() {
   // Form state - initialize from state (for pre-filled pinned drones)
   const [controllerAltitude, setControllerAltitude] = useState(state.controllerConfig.altitude || 1.5);
   const [droneAltitude, setDroneAltitude] = useState(state.droneConfig.altitude || 120);
-  const [droneRadius, setDroneRadius] = useState(state.droneConfig.radius || 500);
   const [altitudeUnit, setAltitudeUnit] = useState<Unit>('M');
   
   // Location picker state
@@ -37,12 +35,14 @@ export function ConfigurationForm() {
 
   const controllerLocationSet = !!state.controllerConfig.location;
   const droneLocationSet = !!state.droneConfig.location;
+  const droneAreaSet = !!state.droneConfig.drawnArea && state.droneConfig.drawnArea.length > 2;
   
   const canSubmit = 
     controllerAltitude > 0 &&
     controllerLocationSet &&
     droneAltitude > 0 &&
-    droneRadius > 0;
+    droneLocationSet &&
+    droneAreaSet;
 
   const handleClose = () => {
     dispatch({ type: 'RESET_DEPLOYMENT' });
@@ -58,9 +58,15 @@ export function ConfigurationForm() {
     dispatch({ type: 'SET_DRONE_ALTITUDE', payload: value });
   };
 
-  const handleRadiusChange = (value: number[]) => {
-    setDroneRadius(value[0]);
-    dispatch({ type: 'SET_DRONE_RADIUS', payload: value[0] });
+  // Start drawing mode
+  const handleStartDrawing = () => {
+    dispatch({ type: 'CLEAR_DRONE_AREA' });
+    dispatch({ type: 'SET_PLACEMENT_MODE', payload: 'drawing' });
+  };
+
+  // Clear drawn area
+  const handleClearArea = () => {
+    dispatch({ type: 'CLEAR_DRONE_AREA' });
   };
 
   // Save current configuration as template
@@ -77,13 +83,12 @@ export function ConfigurationForm() {
         droneAltitude,
         droneLat: state.droneConfig.location?.lat,
         droneLng: state.droneConfig.location?.lng,
-        droneRadius,
       },
     });
   };
 
   const handleSubmit = async () => {
-    if (!canSubmit || !state.selectedDrone) return;
+    if (!canSubmit || !state.selectedDrone || !state.droneConfig.drawnArea) return;
     
     // Close form and show calculating
     dispatch({ type: 'SET_CONFIG_FORM_OPEN', payload: false });
@@ -102,7 +107,7 @@ export function ConfigurationForm() {
           altitude: droneAltitude,
           lat: state.droneConfig.location!.lat,
           lng: state.droneConfig.location!.lng,
-          radius: droneRadius,
+          area: state.droneConfig.drawnArea,
         },
       });
 
@@ -141,7 +146,7 @@ export function ConfigurationForm() {
     }
   };
 
-  // Check if we're in placement mode (user is selecting location on map)
+  // Check if we're in placement mode (user is selecting location or drawing on map)
   const isInPlacementMode = state.placementMode !== 'none';
 
   return (
@@ -259,59 +264,64 @@ export function ConfigurationForm() {
               </div>
             </div>
 
-            {/* Radius */}
+            {/* Drone Location */}
             <div className="space-y-2">
-              <Label>RADIUS</Label>
+              <Label>DRONE LOCATION</Label>
               <div className="flex items-center gap-3">
-                <div className="relative flex-1">
-                  <Input
-                    type="number"
-                    value={droneRadius}
-                    onChange={(e) => {
-                      const val = parseFloat(e.target.value) || 0;
-                      setDroneRadius(val);
-                      dispatch({ type: 'SET_DRONE_RADIUS', payload: val });
-                    }}
-                    className="pr-10 font-mono"
-                    min={50}
-                    max={5000}
-                  />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                    M
-                  </span>
-                </div>
-                
-                {/* Pin location button */}
                 <Button
                   variant={droneLocationSet ? 'success' : 'secondary'}
-                  size="icon"
-                  className="h-12 w-12"
+                  className="flex-1 h-12"
                   onClick={() => setShowDronePicker(true)}
                   disabled={!controllerLocationSet}
                 >
-                  <MapPin className="h-5 w-5" />
+                  <MapPin className="h-5 w-5 mr-2" />
+                  {droneLocationSet ? 'Location Set' : 'Pin Drone Location'}
                 </Button>
               </div>
-
-              {/* Radius slider */}
-              <div className="pt-2">
-                <Slider
-                  value={[droneRadius]}
-                  onValueChange={handleRadiusChange}
-                  min={50}
-                  max={5000}
-                  step={50}
-                />
-                <div className="flex justify-between mt-1">
-                  <span className="text-xs text-muted-foreground">50m</span>
-                  <span className="text-xs text-muted-foreground">5km</span>
-                </div>
-              </div>
-
+              
               {/* Location status */}
               {droneLocationSet && (
                 <p className="text-xs text-buzz-green">
-                  ✓ Location set: {formatCoordinates(state.droneConfig.location!.lat, state.droneConfig.location!.lng)}
+                  ✓ Location: {formatCoordinates(state.droneConfig.location!.lat, state.droneConfig.location!.lng)}
+                </p>
+              )}
+            </div>
+
+            {/* Draw Operational Area */}
+            <div className="space-y-2">
+              <Label>OPERATIONAL AREA</Label>
+              <div className="flex items-center gap-3">
+                <Button
+                  variant={droneAreaSet ? 'success' : 'secondary'}
+                  className="flex-1 h-12"
+                  onClick={handleStartDrawing}
+                  disabled={!droneLocationSet}
+                >
+                  <PenTool className="h-5 w-5 mr-2" />
+                  {droneAreaSet ? 'Redraw Area' : 'Draw Area on Map'}
+                </Button>
+                
+                {droneAreaSet && (
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="h-12 w-12"
+                    onClick={handleClearArea}
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </Button>
+                )}
+              </div>
+              
+              {/* Area status */}
+              {droneAreaSet && (
+                <p className="text-xs text-buzz-green">
+                  ✓ Area defined with {state.droneConfig.drawnArea!.length} points
+                </p>
+              )}
+              {!droneAreaSet && droneLocationSet && (
+                <p className="text-xs text-muted-foreground">
+                  Draw a polygon on the map to define the operational area
                 </p>
               )}
             </div>
@@ -381,4 +391,3 @@ export function ConfigurationForm() {
     </>
   );
 }
-

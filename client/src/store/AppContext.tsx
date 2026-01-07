@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, ReactNode } from 'react';
+import { createContext, useContext, useReducer, ReactNode } from 'react';
 
 // Types
 interface Coordinates {
@@ -9,7 +9,7 @@ interface Coordinates {
 interface DroneConfig {
   altitude: number;
   location: Coordinates | null;
-  radius: number;
+  drawnArea: Coordinates[] | null; // Polygon coordinates for the operational area
 }
 
 interface ControllerConfig {
@@ -29,7 +29,7 @@ interface CalculationResult {
   calculatedAt: string;
 }
 
-type PlacementMode = 'none' | 'controller' | 'drone';
+type PlacementMode = 'none' | 'controller' | 'drone' | 'drawing';
 type AppPhase = 'idle' | 'configuring' | 'calculating' | 'result';
 type ControlCenterStatus = 'idle' | 'sending' | 'approved' | 'not_approved';
 
@@ -70,7 +70,7 @@ interface SelectDroneWithConfigPayload {
   droneConfig?: {
     altitude: number;
     location: Coordinates | null;
-    radius: number;
+    drawnArea: Coordinates[] | null;
   };
 }
 
@@ -84,7 +84,8 @@ type Action =
   | { type: 'SET_CONTROLLER_LOCATION'; payload: Coordinates }
   | { type: 'SET_DRONE_ALTITUDE'; payload: number }
   | { type: 'SET_DRONE_LOCATION'; payload: Coordinates }
-  | { type: 'SET_DRONE_RADIUS'; payload: number }
+  | { type: 'SET_DRONE_AREA'; payload: Coordinates[] }
+  | { type: 'CLEAR_DRONE_AREA' }
   | { type: 'SET_PHASE'; payload: AppPhase }
   | { type: 'SET_PLACEMENT_MODE'; payload: PlacementMode }
   | { type: 'SET_CALCULATION_RESULT'; payload: CalculationResult }
@@ -105,7 +106,7 @@ const initialState: AppState = {
   droneConfig: {
     altitude: 0,
     location: null,
-    radius: 500,
+    drawnArea: null,
   },
   phase: 'idle',
   placementMode: 'none',
@@ -172,10 +173,16 @@ function appReducer(state: AppState, action: Action): AppState {
         droneConfig: { ...state.droneConfig, location: action.payload },
         placementMode: 'none',
       };
-    case 'SET_DRONE_RADIUS':
+    case 'SET_DRONE_AREA':
       return {
         ...state,
-        droneConfig: { ...state.droneConfig, radius: action.payload },
+        droneConfig: { ...state.droneConfig, drawnArea: action.payload },
+        placementMode: 'none',
+      };
+    case 'CLEAR_DRONE_AREA':
+      return {
+        ...state,
+        droneConfig: { ...state.droneConfig, drawnArea: null },
       };
     case 'SET_PHASE':
       return { ...state, phase: action.payload };
@@ -198,7 +205,7 @@ function appReducer(state: AppState, action: Action): AppState {
         ...state,
         selectedDrone: null,
         controllerConfig: { altitude: 0, location: null },
-        droneConfig: { altitude: 0, location: null, radius: 500 },
+        droneConfig: { altitude: 0, location: null, drawnArea: null },
         phase: 'idle',
         placementMode: 'none',
         calculationResult: null,
@@ -236,4 +243,3 @@ export function useApp() {
 }
 
 export type { AppState, Coordinates, SelectedDrone, CalculationResult };
-

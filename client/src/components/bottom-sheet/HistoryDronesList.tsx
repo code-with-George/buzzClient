@@ -1,6 +1,5 @@
-import React from 'react';
 import { Bot, Plane, Camera, Radio, Truck, Radar, ChevronRight, History } from 'lucide-react';
-import { useApp } from '@/store/AppContext';
+import { useApp, Coordinates } from '@/store/AppContext';
 import { trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 
@@ -33,7 +32,7 @@ export function HistoryDronesList() {
     drone_altitude: number;
     drone_lat: number;
     drone_lng: number;
-    operational_radius: number;
+    operational_area: Coordinates[];
   }) => {
     // Select drone with all saved configuration
     dispatch({
@@ -58,7 +57,7 @@ export function HistoryDronesList() {
             lat: flight.drone_lat,
             lng: flight.drone_lng,
           },
-          radius: flight.operational_radius,
+          drawnArea: flight.operational_area,
         },
       },
     });
@@ -119,7 +118,7 @@ export function HistoryDronesList() {
               <h3 className="font-semibold">{flight.drone_name}</h3>
               <p className="text-xs text-muted-foreground">
                 {flight.drone_type.charAt(0).toUpperCase() + flight.drone_type.slice(1)} • 
-                Alt: {flight.drone_altitude}m • R: {flight.operational_radius}m
+                Alt: {flight.drone_altitude}m • {flight.operational_area.length} pts
               </p>
             </div>
 
@@ -138,4 +137,3 @@ export function HistoryDronesList() {
     </div>
   );
 }
-

@@ -9,11 +9,11 @@ import ImageLayer from 'ol/layer/Image';
 import ImageStatic from 'ol/source/ImageStatic';
 import { fromLonLat, toLonLat } from 'ol/proj';
 import { Feature } from 'ol';
-import { Point } from 'ol/geom';
+import { Point, Polygon } from 'ol/geom';
 import { Style, Fill, Stroke, Icon } from 'ol/style';
-import { circular } from 'ol/geom/Polygon';
+import Draw from 'ol/interaction/Draw';
 import { Layers, Crosshair } from 'lucide-react';
-import { useApp } from '@/store/AppContext';
+import { useApp, Coordinates } from '@/store/AppContext';
 import { Button } from '@/components/ui/button';
 import 'ol/ol.css';
 
@@ -34,8 +34,9 @@ export function MapView() {
   const userMarkerLayer = useRef<VectorLayer<VectorSource> | null>(null);
   const controllerMarkerLayer = useRef<VectorLayer<VectorSource> | null>(null);
   const droneMarkerLayer = useRef<VectorLayer<VectorSource> | null>(null);
-  const radiusLayer = useRef<VectorLayer<VectorSource> | null>(null);
+  const drawnAreaLayer = useRef<VectorLayer<VectorSource> | null>(null);
   const resultOverlayLayer = useRef<ImageLayer<ImageStatic> | null>(null);
+  const drawInteraction = useRef<Draw | null>(null);
 
   const { state, dispatch } = useApp();
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -86,12 +87,21 @@ export function MapView() {
       zIndex: 102,
     });
 
-    radiusLayer.current = new VectorLayer({
+    drawnAreaLayer.current = new VectorLayer({
       source: new VectorSource(),
       zIndex: 50,
+      style: new Style({
+        fill: new Fill({
+          color: 'rgba(168, 85, 247, 0.15)',
+        }),
+        stroke: new Stroke({
+          color: '#a855f7',
+          width: 2,
+        }),
+      }),
     });
 
-    map.current.addLayer(radiusLayer.current);
+    map.current.addLayer(drawnAreaLayer.current);
     map.current.addLayer(userMarkerLayer.current);
     map.current.addLayer(controllerMarkerLayer.current);
     map.current.addLayer(droneMarkerLayer.current);
@@ -106,12 +116,12 @@ export function MapView() {
     };
   }, []);
 
-  // Handle map click for placement mode
+  // Handle map click for placement mode (controller and drone)
   useEffect(() => {
     if (!map.current) return;
 
     const handleClick = (e: { coordinate: number[] }) => {
-      if (state.placementMode === 'none') return;
+      if (state.placementMode !== 'controller' && state.placementMode !== 'drone') return;
       
       const lonLat = toLonLat(e.coordinate);
       const coords = { lat: lonLat[1], lng: lonLat[0] };
@@ -130,11 +140,77 @@ export function MapView() {
     };
   }, [state.placementMode, dispatch]);
 
+  // Handle drawing mode
+  useEffect(() => {
+    if (!map.current || !drawnAreaLayer.current) return;
+
+    // Remove existing draw interaction
+    if (drawInteraction.current) {
+      map.current.removeInteraction(drawInteraction.current);
+      drawInteraction.current = null;
+    }
+
+    if (state.placementMode === 'drawing') {
+      const source = drawnAreaLayer.current.getSource();
+      if (!source) return;
+
+      // Clear existing drawn area
+      source.clear();
+
+      // Create draw interaction for polygon
+      drawInteraction.current = new Draw({
+        source: source,
+        type: 'Polygon',
+        style: new Style({
+          fill: new Fill({
+            color: 'rgba(168, 85, 247, 0.2)',
+          }),
+          stroke: new Stroke({
+            color: '#a855f7',
+            width: 2,
+            lineDash: [5, 5],
+          }),
+        }),
+      });
+
+      // Handle draw end
+      drawInteraction.current.on('drawend', (e) => {
+        const geometry = e.feature.getGeometry() as Polygon;
+        const coordinates = geometry.getCoordinates()[0];
+        
+        // Convert from map projection to lat/lng
+        const areaCoords: Coordinates[] = coordinates.map((coord) => {
+          const lonLat = toLonLat(coord);
+          return { lat: lonLat[1], lng: lonLat[0] };
+        });
+
+        dispatch({ type: 'SET_DRONE_AREA', payload: areaCoords });
+
+        // Remove draw interaction after drawing
+        if (map.current && drawInteraction.current) {
+          map.current.removeInteraction(drawInteraction.current);
+          drawInteraction.current = null;
+        }
+      });
+
+      map.current.addInteraction(drawInteraction.current);
+    }
+
+    return () => {
+      if (map.current && drawInteraction.current) {
+        map.current.removeInteraction(drawInteraction.current);
+        drawInteraction.current = null;
+      }
+    };
+  }, [state.placementMode, dispatch]);
+
   // Update cursor based on placement mode
   useEffect(() => {
     if (!map.current || !mapContainer.current) return;
 
-    if (state.placementMode !== 'none') {
+    if (state.placementMode === 'controller' || state.placementMode === 'drone') {
+      mapContainer.current.style.cursor = 'crosshair';
+    } else if (state.placementMode === 'drawing') {
       mapContainer.current.style.cursor = 'crosshair';
     } else {
       mapContainer.current.style.cursor = '';
@@ -224,42 +300,17 @@ export function MapView() {
     }
   }, [state.controllerConfig.location, mapLoaded]);
 
-  // Update drone marker and radius circle
+  // Update drone marker
   useEffect(() => {
-    if (!map.current || !mapLoaded || !droneMarkerLayer.current || !radiusLayer.current) return;
+    if (!map.current || !mapLoaded || !droneMarkerLayer.current) return;
 
     const droneSource = droneMarkerLayer.current.getSource();
-    const radiusSource = radiusLayer.current.getSource();
-    if (!droneSource || !radiusSource) return;
+    if (!droneSource) return;
 
     droneSource.clear();
-    radiusSource.clear();
 
     if (state.droneConfig.location) {
       const { lat, lng } = state.droneConfig.location;
-      const radius = state.droneConfig.radius;
-
-      // Create radius circle
-      const circleGeom = circular([lng, lat], radius, 64);
-      circleGeom.transform('EPSG:4326', 'EPSG:3857');
-
-      const circleFeature = new Feature({
-        geometry: circleGeom,
-      });
-
-      circleFeature.setStyle(
-        new Style({
-          fill: new Fill({
-            color: state.calculationResult ? 'transparent' : 'rgba(168, 85, 247, 0.15)',
-          }),
-          stroke: new Stroke({
-            color: '#a855f7',
-            width: 2,
-          }),
-        })
-      );
-
-      radiusSource.addFeature(circleFeature);
 
       // Create drone marker
       const droneFeature = new Feature({
@@ -295,11 +346,50 @@ export function MapView() {
 
       droneSource.addFeature(droneFeature);
     }
-  }, [state.droneConfig.location, state.droneConfig.radius, state.calculationResult, state.selectedDrone?.name, mapLoaded]);
+  }, [state.droneConfig.location, state.selectedDrone?.name, mapLoaded]);
 
-  // Render calculation result image
+  // Update drawn area polygon
   useEffect(() => {
-    if (!map.current || !mapLoaded || !state.droneConfig.location) return;
+    if (!map.current || !mapLoaded || !drawnAreaLayer.current) return;
+
+    const source = drawnAreaLayer.current.getSource();
+    if (!source) return;
+
+    // Only clear and redraw if we're not in drawing mode (to prevent clearing while drawing)
+    if (state.placementMode !== 'drawing') {
+      source.clear();
+
+      if (state.droneConfig.drawnArea && state.droneConfig.drawnArea.length > 2) {
+        // Convert lat/lng to map projection
+        const coordinates = state.droneConfig.drawnArea.map((coord) =>
+          fromLonLat([coord.lng, coord.lat])
+        );
+
+        const polygonFeature = new Feature({
+          geometry: new Polygon([coordinates]),
+        });
+
+        // Set style based on whether we have a calculation result
+        polygonFeature.setStyle(
+          new Style({
+            fill: new Fill({
+              color: state.calculationResult ? 'transparent' : 'rgba(168, 85, 247, 0.15)',
+            }),
+            stroke: new Stroke({
+              color: '#a855f7',
+              width: 2,
+            }),
+          })
+        );
+
+        source.addFeature(polygonFeature);
+      }
+    }
+  }, [state.droneConfig.drawnArea, state.calculationResult, state.placementMode, mapLoaded]);
+
+  // Render calculation result image clipped to drawn area
+  useEffect(() => {
+    if (!map.current || !mapLoaded || !state.droneConfig.drawnArea) return;
 
     // Remove existing overlay
     if (resultOverlayLayer.current) {
@@ -307,12 +397,9 @@ export function MapView() {
       resultOverlayLayer.current = null;
     }
 
-    if (state.calculationResult) {
-      const { lat, lng } = state.droneConfig.location;
-      const radius = state.droneConfig.radius;
-
-      // Calculate bounds for the image
-      const bounds = calculateBoundsFromRadius(lat, lng, radius);
+    if (state.calculationResult && state.droneConfig.drawnArea.length > 2) {
+      // Calculate bounds from polygon
+      const bounds = calculateBoundsFromPolygon(state.droneConfig.drawnArea);
 
       resultOverlayLayer.current = new ImageLayer({
         source: new ImageStatic({
@@ -328,7 +415,7 @@ export function MapView() {
 
       map.current.addLayer(resultOverlayLayer.current);
     }
-  }, [state.calculationResult, state.droneConfig.location, state.droneConfig.radius, mapLoaded]);
+  }, [state.calculationResult, state.droneConfig.drawnArea, mapLoaded]);
 
   // Center on user location
   const handleCenterOnUser = useCallback(() => {
@@ -370,10 +457,18 @@ export function MapView() {
         <div className="absolute top-24 left-1/2 -translate-x-1/2 z-20">
           <div className="glass px-4 py-2 rounded-full">
             <span className="text-sm font-medium">
-              Tap on map to place{' '}
-              <span className="text-buzz-purple">
-                {state.placementMode === 'controller' ? 'Controller' : 'Drone'}
-              </span>
+              {state.placementMode === 'drawing' ? (
+                <>
+                  <span className="text-buzz-purple">Draw</span> the operational area on map
+                </>
+              ) : (
+                <>
+                  Tap on map to place{' '}
+                  <span className="text-buzz-purple">
+                    {state.placementMode === 'controller' ? 'Controller' : 'Drone'}
+                  </span>
+                </>
+              )}
             </span>
           </div>
         </div>
@@ -382,15 +477,22 @@ export function MapView() {
   );
 }
 
-// Calculate bounds from center and radius
-function calculateBoundsFromRadius(lat: number, lng: number, radiusMeters: number) {
-  const distanceX = radiusMeters / (111320 * Math.cos((lat * Math.PI) / 180));
-  const distanceY = radiusMeters / 110540;
+// Calculate bounds from polygon coordinates
+function calculateBoundsFromPolygon(coords: Coordinates[]) {
+  let minLat = Infinity, maxLat = -Infinity;
+  let minLng = Infinity, maxLng = -Infinity;
+
+  for (const coord of coords) {
+    minLat = Math.min(minLat, coord.lat);
+    maxLat = Math.max(maxLat, coord.lat);
+    minLng = Math.min(minLng, coord.lng);
+    maxLng = Math.max(maxLng, coord.lng);
+  }
 
   return {
-    north: lat + distanceY,
-    south: lat - distanceY,
-    east: lng + distanceX,
-    west: lng - distanceX,
+    north: maxLat,
+    south: minLat,
+    east: maxLng,
+    west: minLng,
   };
 }

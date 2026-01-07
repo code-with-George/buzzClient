@@ -15,6 +15,11 @@ export interface Drone {
   created_at: string;
 }
 
+export interface Coordinates {
+  lat: number;
+  lng: number;
+}
+
 export interface PinnedDrone {
   id: number;
   drone_id: number;
@@ -27,7 +32,7 @@ export interface PinnedDrone {
   drone_altitude: number | null;
   drone_lat: number | null;
   drone_lng: number | null;
-  drone_radius: number | null;
+  drone_area: Coordinates[] | null;
   created_at: string;
 }
 
@@ -51,7 +56,7 @@ export interface FlightHistory {
   drone_altitude: number;
   drone_lat: number;
   drone_lng: number;
-  operational_radius: number;
+  operational_area: Coordinates[];
   status: 'Launched' | 'Not Launched';
   control_center_approved: boolean | null;
   created_at: string;
@@ -163,7 +168,7 @@ class MockDatabase {
       droneAltitude?: number;
       droneLat?: number;
       droneLng?: number;
-      droneRadius?: number;
+      droneArea?: Coordinates[];
     }
   ): { success: boolean; alreadyPinned: boolean } {
     const existing = this.pinnedDrones.find(p => p.drone_id === droneId && p.user_id === userId);
@@ -176,7 +181,7 @@ class MockDatabase {
         existing.drone_altitude = config.droneAltitude ?? existing.drone_altitude;
         existing.drone_lat = config.droneLat ?? existing.drone_lat;
         existing.drone_lng = config.droneLng ?? existing.drone_lng;
-        existing.drone_radius = config.droneRadius ?? existing.drone_radius;
+        existing.drone_area = config.droneArea ?? existing.drone_area;
       }
       return { success: true, alreadyPinned: true };
     }
@@ -191,7 +196,7 @@ class MockDatabase {
       drone_altitude: config?.droneAltitude ?? null,
       drone_lat: config?.droneLat ?? null,
       drone_lng: config?.droneLng ?? null,
-      drone_radius: config?.droneRadius ?? null,
+      drone_area: config?.droneArea ?? null,
       created_at: new Date().toISOString(),
     });
     return { success: true, alreadyPinned: false };

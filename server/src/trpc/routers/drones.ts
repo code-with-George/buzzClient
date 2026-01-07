@@ -46,7 +46,7 @@ export const dronesRouter = router({
         droneAltitude: z.number().optional(),
         droneLat: z.number().optional(),
         droneLng: z.number().optional(),
-        droneRadius: z.number().optional(),
+        droneArea: z.array(z.object({ lat: z.number(), lng: z.number() })).optional(),
       }).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
