@@ -402,15 +402,16 @@ export function MapView() {
 
   // Render calculation result image clipped to drawn area
   useEffect(() => {
-    if (!map.current || !mapLoaded || !state.droneConfig.drawnArea) return;
+    if (!map.current || !mapLoaded) return;
 
-    // Remove existing overlay
+    // Always remove existing overlay first
     if (resultOverlayLayer.current) {
       map.current.removeLayer(resultOverlayLayer.current);
       resultOverlayLayer.current = null;
     }
 
-    if (state.calculationResult && state.droneConfig.drawnArea.length > 2) {
+    // Only add new overlay if we have both result and drawn area
+    if (state.calculationResult && state.droneConfig.drawnArea && state.droneConfig.drawnArea.length > 2) {
       // Calculate bounds from polygon
       const bounds = calculateBoundsFromPolygon(state.droneConfig.drawnArea);
 
