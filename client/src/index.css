@@ -1,0 +1,155 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 240 10% 4%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 8%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 8%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 270 91% 65%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 10% 15%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 10% 15%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 270 91% 65%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 10% 20%;
+    --input: 240 10% 20%;
+    --ring: 270 91% 65%;
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html, body, #root {
+    @apply h-full w-full overflow-hidden;
+  }
+}
+
+/* Custom scrollbar */
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 3px;
+  }
+}
+
+/* MapLibre overrides for dark mode */
+.maplibregl-map {
+  font-family: inherit;
+}
+
+.maplibregl-popup-content {
+  @apply bg-buzz-dark-card text-foreground border border-buzz-dark-border rounded-lg shadow-xl;
+  padding: 0 !important;
+}
+
+.maplibregl-popup-tip {
+  border-top-color: hsl(240 10% 8%) !important;
+}
+
+.maplibregl-ctrl-group {
+  @apply bg-buzz-dark-card border border-buzz-dark-border rounded-lg overflow-hidden;
+}
+
+.maplibregl-ctrl-group button {
+  @apply bg-buzz-dark-card text-foreground border-none;
+}
+
+.maplibregl-ctrl-group button:hover {
+  @apply bg-buzz-dark-border;
+}
+
+/* Glass morphism effect */
+.glass {
+  @apply bg-black/40 backdrop-blur-xl border border-white/10;
+}
+
+/* Status indicators */
+.status-online {
+  @apply bg-buzz-green;
+  box-shadow: 0 0 8px hsl(142.1 76.2% 36.3% / 0.6);
+}
+
+.status-offline {
+  @apply bg-buzz-red;
+  box-shadow: 0 0 8px hsl(0 84.2% 60.2% / 0.6);
+}
+
+.status-warning {
+  @apply bg-buzz-orange;
+  box-shadow: 0 0 8px hsl(24.6 95% 53.1% / 0.6);
+}
+
+/* Dot grid background pattern */
+.dot-grid {
+  background-image: radial-gradient(circle, hsl(var(--muted-foreground) / 0.15) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Touch-friendly tap targets */
+@layer utilities {
+  .tap-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+}
+
+/* Smooth transitions */
+.transition-height {
+  transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Pulse animation for status indicators */
+@keyframes status-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 currentColor;
+  }
+  50% {
+    box-shadow: 0 0 0 4px transparent;
+  }
+}
+
+.status-pulse {
+  animation: status-pulse 2s ease-in-out infinite;
+}
+
