@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, MapPin, Loader2, Rocket, Bookmark, PenTool, Trash2 } from 'lucide-react';
+import { X, MapPin, Loader2, Rocket, PenTool, Trash2 } from 'lucide-react';
 import { useApp } from '@/store/AppContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,6 @@ type Unit = 'M' | 'FT';
 
 export function ConfigurationForm() {
   const { state, dispatch } = useApp();
-  const utils = trpc.useUtils();
   
   // Form state - initialize from state (for pre-filled pinned drones)
   const [controllerAltitude, setControllerAltitude] = useState(state.controllerConfig.altitude || 1.5);
@@ -26,11 +25,6 @@ export function ConfigurationForm() {
   
   // Mutations
   const calculateMutation = trpc.flight.calculate.useMutation();
-  const pinDrone = trpc.drones.pin.useMutation({
-    onSuccess: () => {
-      utils.drones.getPinned.invalidate();
-    },
-  });
 
   const controllerLocationSet = !!state.controllerConfig.location;
   const droneAreaSet = !!state.droneConfig.drawnArea && state.droneConfig.drawnArea.length > 2;
@@ -66,24 +60,6 @@ export function ConfigurationForm() {
   // Clear drawn area
   const handleClearArea = () => {
     dispatch({ type: 'CLEAR_DRONE_AREA' });
-  };
-
-  // Save current configuration as template
-  const handleSaveConfiguration = () => {
-    if (!state.selectedDrone) return;
-    
-    pinDrone.mutate({
-      droneId: state.selectedDrone.id,
-      droneName: state.selectedDrone.name,
-      config: {
-        controllerAltitude,
-        controllerLat: state.controllerConfig.location?.lat,
-        controllerLng: state.controllerConfig.location?.lng,
-        droneAltitude,
-        droneLat: state.droneConfig.location?.lat,
-        droneLng: state.droneConfig.location?.lng,
-      },
-    });
   };
 
   const handleSubmit = async () => {
@@ -318,16 +294,6 @@ export function ConfigurationForm() {
               </>
             )}
           </Button>
-
-          {/* Save Configuration as Template */}
-          <button
-            onClick={handleSaveConfiguration}
-            disabled={!state.selectedDrone || pinDrone.isPending}
-            className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-buzz-purple transition-colors py-2 disabled:opacity-50"
-          >
-            <Bookmark className={cn("h-4 w-4", pinDrone.isSuccess && "fill-buzz-purple text-buzz-purple")} />
-            {pinDrone.isPending ? 'שומר...' : pinDrone.isSuccess ? 'הגדרות נשמרו!' : 'שמור הגדרות כתבנית'}
-          </button>
 
           <button
             onClick={handleClose}
