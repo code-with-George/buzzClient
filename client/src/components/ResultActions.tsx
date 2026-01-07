@@ -9,8 +9,14 @@ import { cn } from '@/lib/utils';
 export function ResultActions() {
   const { state, dispatch } = useApp();
   const [, setIsRequestingApproval] = useState(false);
+  const utils = trpc.useUtils();
   
-  const saveToHistory = trpc.flight.saveToHistory.useMutation();
+  const saveToHistory = trpc.flight.saveToHistory.useMutation({
+    onSuccess: () => {
+      // Invalidate flight history to refresh the list immediately
+      utils.flight.getHistory.invalidate();
+    },
+  });
   const requestApproval = trpc.flight.requestApproval.useMutation();
 
   // Handle cancel
@@ -98,29 +104,29 @@ export function ResultActions() {
       case 'sending':
         return (
           <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Sending...
+            <Loader2 className="ms-2 h-4 w-4 animate-spin" />
+            שולח...
           </>
         );
       case 'approved':
         return (
           <>
-            <Check className="mr-2 h-4 w-4" />
-            Approved
+            <Check className="ms-2 h-4 w-4" />
+            אושר
           </>
         );
       case 'not_approved':
         return (
           <>
-            <XCircle className="mr-2 h-4 w-4" />
-            Not Approved
+            <XCircle className="ms-2 h-4 w-4" />
+            לא אושר
           </>
         );
       default:
         return (
           <>
-            <Shield className="mr-2 h-4 w-4" />
-            Send to HQ
+            <Shield className="ms-2 h-4 w-4" />
+            שלח למפקדה
           </>
         );
     }
@@ -151,10 +157,10 @@ export function ResultActions() {
 
           {/* Info */}
           <div className="flex-1">
-            <h3 className="font-bold text-lg">{state.selectedDrone?.name || 'Drone-01'}</h3>
+            <h3 className="font-bold text-lg">{state.selectedDrone?.name || 'רחפן-01'}</h3>
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-buzz-green" />
-              <span className="text-sm text-buzz-green">Ready for Deployment</span>
+              <span className="text-sm text-buzz-green">מוכן לשיגור</span>
             </div>
           </div>
 
@@ -177,8 +183,8 @@ export function ResultActions() {
           onClick={handleCancel}
           className="flex-shrink-0"
         >
-          <X className="mr-2 h-4 w-4" />
-          Cancel
+          <X className="ms-2 h-4 w-4" />
+          ביטול
         </Button>
 
         {/* Send to Control Center */}
@@ -201,11 +207,10 @@ export function ResultActions() {
           onClick={handleLaunch}
           className="flex-shrink-0"
         >
-          <Rocket className="mr-2 h-4 w-4" />
-          Launch
+          <Rocket className="ms-2 h-4 w-4" />
+          שיגור
         </Button>
       </div>
     </div>
   );
 }
-

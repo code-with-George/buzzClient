@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useApp } from '@/store/AppContext';
 import { MapView } from '@/components/map/MapView';
 import { TopBar } from '@/components/TopBar';

@@ -1,5 +1,4 @@
-import { X, Navigation, Hand, ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { X, Navigation, Hand, ChevronLeft } from 'lucide-react';
 import { formatCoordinates } from '@/lib/utils';
 import type { Coordinates } from '@/store/AppContext';
 
@@ -55,15 +54,15 @@ export function LocationPicker({
             <div className="p-3 bg-white/20 rounded-xl">
               <Navigation className="h-5 w-5" />
             </div>
-            <div className="flex-1 text-left">
-              <h4 className="font-semibold">Pin Current Location</h4>
+            <div className="flex-1 text-right">
+              <h4 className="font-semibold">הצמד למיקום הנוכחי</h4>
               <p className="text-sm text-white/70">
                 {currentLocation
                   ? formatCoordinates(currentLocation.lat, currentLocation.lng)
-                  : 'Location unavailable'}
+                  : 'מיקום לא זמין'}
               </p>
             </div>
-            <ChevronRight className="h-5 w-5" />
+            <ChevronLeft className="h-5 w-5" />
           </button>
 
           {/* Tap on map */}
@@ -74,13 +73,13 @@ export function LocationPicker({
             <div className="p-3 bg-buzz-dark-border rounded-xl">
               <Hand className="h-5 w-5" />
             </div>
-            <div className="flex-1 text-left">
-              <h4 className="font-semibold">Tap on Map</h4>
+            <div className="flex-1 text-right">
+              <h4 className="font-semibold">לחץ על המפה</h4>
               <p className="text-sm text-muted-foreground">
-                Manually select a point
+                בחר נקודה באופן ידני
               </p>
             </div>
-            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            <ChevronLeft className="h-5 w-5 text-muted-foreground" />
           </button>
         </div>
 
@@ -89,10 +88,9 @@ export function LocationPicker({
           onClick={onClose}
           className="w-full mt-6 text-center text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
         >
-          Cancel
+          ביטול
         </button>
       </div>
     </div>
   );
 }
-

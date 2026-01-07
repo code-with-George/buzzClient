@@ -15,6 +15,20 @@ const droneIcons: Record<string, React.ReactNode> = {
   default: <Bot className="h-5 w-5" />,
 };
 
+// Drone type translations
+const droneTypeHebrew: Record<string, string> = {
+  patrol: 'סיור',
+  survey: 'מיפוי',
+  camera: 'צילום',
+  recon: 'סיור',
+  cargo: 'מטען',
+  relay: 'תקשורת',
+  surveillance: 'מעקב',
+  scout: 'סיור',
+  stealth: 'התגנבות',
+  general: 'כללי',
+};
+
 export function PinnedDronesList() {
   const { dispatch } = useApp();
   const pinnedDrones = trpc.drones.getPinned.useQuery();
@@ -87,10 +101,10 @@ export function PinnedDronesList() {
     <div className="mb-6">
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Pinned Units
+          יחידות מוצמדות
         </span>
         <button className="text-xs text-buzz-purple hover:text-buzz-purple-light transition-colors">
-          Edit
+          עריכה
         </button>
       </div>
 
@@ -99,6 +113,7 @@ export function PinnedDronesList() {
           const batteryColor = getBatteryColor(drone.battery_level);
           const isLowBattery = drone.battery_level < 20;
           const isAvailable = drone.status === 'available';
+          const typeHebrew = droneTypeHebrew[drone.type] || drone.type;
 
           return (
             <button
@@ -124,12 +139,12 @@ export function PinnedDronesList() {
               </div>
 
               {/* Name */}
-              <h3 className="font-bold text-left mb-1">{drone.drone_name}</h3>
+              <h3 className="font-bold text-right mb-1">{drone.drone_name}</h3>
 
               {/* Status info */}
-              <p className="text-xs text-muted-foreground text-left mb-3 truncate">
-                {drone.type.charAt(0).toUpperCase() + drone.type.slice(1)}
-                {isLowBattery && ' • Low Bat'}
+              <p className="text-xs text-muted-foreground text-right mb-3 truncate">
+                {typeHebrew}
+                {isLowBattery && ' • סוללה חלשה'}
               </p>
 
               {/* Battery bar */}
@@ -158,4 +173,3 @@ export function PinnedDronesList() {
     </div>
   );
 }
-

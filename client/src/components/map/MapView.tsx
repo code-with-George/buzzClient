@@ -12,9 +12,7 @@ import { Feature } from 'ol';
 import { Point, Polygon } from 'ol/geom';
 import { Style, Fill, Stroke, Icon } from 'ol/style';
 import Draw from 'ol/interaction/Draw';
-import { Layers, Crosshair } from 'lucide-react';
 import { useApp, Coordinates } from '@/store/AppContext';
-import { Button } from '@/components/ui/button';
 import 'ol/ol.css';
 
 // Israel bounds in EPSG:4326 (lon, lat)
@@ -27,6 +25,23 @@ const ISRAEL_BOUNDS = {
 
 // Israel center
 const ISRAEL_CENTER: [number, number] = [35.0, 31.5];
+
+// Calculate centroid of a polygon
+function calculateCentroid(coords: Coordinates[]): Coordinates {
+  let sumLat = 0;
+  let sumLng = 0;
+  const n = coords.length;
+  
+  for (const coord of coords) {
+    sumLat += coord.lat;
+    sumLng += coord.lng;
+  }
+  
+  return {
+    lat: sumLat / n,
+    lng: sumLng / n,
+  };
+}
 
 export function MapView() {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -116,21 +131,17 @@ export function MapView() {
     };
   }, []);
 
-  // Handle map click for placement mode (controller and drone)
+  // Handle map click for controller placement only
   useEffect(() => {
     if (!map.current) return;
 
     const handleClick = (e: { coordinate: number[] }) => {
-      if (state.placementMode !== 'controller' && state.placementMode !== 'drone') return;
+      if (state.placementMode !== 'controller') return;
       
       const lonLat = toLonLat(e.coordinate);
       const coords = { lat: lonLat[1], lng: lonLat[0] };
 
-      if (state.placementMode === 'controller') {
-        dispatch({ type: 'SET_CONTROLLER_LOCATION', payload: coords });
-      } else if (state.placementMode === 'drone') {
-        dispatch({ type: 'SET_DRONE_LOCATION', payload: coords });
-      }
+      dispatch({ type: 'SET_CONTROLLER_LOCATION', payload: coords });
     };
 
     map.current.on('click', handleClick);
@@ -184,6 +195,9 @@ export function MapView() {
           return { lat: lonLat[1], lng: lonLat[0] };
         });
 
+        // Calculate centroid and set as drone location
+        const centroid = calculateCentroid(areaCoords);
+        dispatch({ type: 'SET_DRONE_LOCATION', payload: centroid });
         dispatch({ type: 'SET_DRONE_AREA', payload: areaCoords });
 
         // Remove draw interaction after drawing
@@ -208,9 +222,7 @@ export function MapView() {
   useEffect(() => {
     if (!map.current || !mapContainer.current) return;
 
-    if (state.placementMode === 'controller' || state.placementMode === 'drone') {
-      mapContainer.current.style.cursor = 'crosshair';
-    } else if (state.placementMode === 'drawing') {
+    if (state.placementMode === 'controller' || state.placementMode === 'drawing') {
       mapContainer.current.style.cursor = 'crosshair';
     } else {
       mapContainer.current.style.cursor = '';
@@ -300,7 +312,7 @@ export function MapView() {
     }
   }, [state.controllerConfig.location, mapLoaded]);
 
-  // Update drone marker
+  // Update drone marker (appears at center of drawn area)
   useEffect(() => {
     if (!map.current || !mapLoaded || !droneMarkerLayer.current) return;
 
@@ -309,7 +321,8 @@ export function MapView() {
 
     droneSource.clear();
 
-    if (state.droneConfig.location) {
+    // Only show drone marker if we have a drawn area (drone location is set automatically)
+    if (state.droneConfig.location && state.droneConfig.drawnArea && state.droneConfig.drawnArea.length > 2) {
       const { lat, lng } = state.droneConfig.location;
 
       // Create drone marker
@@ -317,7 +330,7 @@ export function MapView() {
         geometry: new Point(fromLonLat([lng, lat])),
       });
 
-      const droneName = state.selectedDrone?.name || 'DRONE-01';
+      const droneName = state.selectedDrone?.name || 'רחפן-01';
 
       // Drone marker SVG with label
       const droneSvg = `
@@ -346,7 +359,7 @@ export function MapView() {
 
       droneSource.addFeature(droneFeature);
     }
-  }, [state.droneConfig.location, state.selectedDrone?.name, mapLoaded]);
+  }, [state.droneConfig.location, state.droneConfig.drawnArea, state.selectedDrone?.name, mapLoaded]);
 
   // Update drawn area polygon
   useEffect(() => {
@@ -428,29 +441,16 @@ export function MapView() {
     });
   }, [state.userLocation]);
 
+  // Listen for center on user event from other components
+  useEffect(() => {
+    const handler = () => handleCenterOnUser();
+    window.addEventListener('centerOnUser', handler);
+    return () => window.removeEventListener('centerOnUser', handler);
+  }, [handleCenterOnUser]);
+
   return (
     <div className="absolute inset-0">
       <div ref={mapContainer} className="h-full w-full" />
-
-      {/* Map controls */}
-      <div className="absolute right-4 bottom-48 z-10 flex flex-col gap-2">
-        <Button
-          variant="secondary"
-          size="icon"
-          className="h-12 w-12 rounded-xl shadow-lg"
-          onClick={() => {}}
-        >
-          <Layers className="h-5 w-5" />
-        </Button>
-        <Button
-          variant="secondary"
-          size="icon"
-          className="h-12 w-12 rounded-xl shadow-lg"
-          onClick={handleCenterOnUser}
-        >
-          <Crosshair className="h-5 w-5" />
-        </Button>
-      </div>
 
       {/* Placement mode indicator */}
       {state.placementMode !== 'none' && (
@@ -459,14 +459,12 @@ export function MapView() {
             <span className="text-sm font-medium">
               {state.placementMode === 'drawing' ? (
                 <>
-                  <span className="text-buzz-purple">Draw</span> the operational area on map
+                  <span className="text-buzz-purple">שרטט</span> את אזור הפעולה על המפה
                 </>
               ) : (
                 <>
-                  Tap on map to place{' '}
-                  <span className="text-buzz-purple">
-                    {state.placementMode === 'controller' ? 'Controller' : 'Drone'}
-                  </span>
+                  לחץ על המפה למיקום{' '}
+                  <span className="text-buzz-purple">השלט</span>
                 </>
               )}
             </span>

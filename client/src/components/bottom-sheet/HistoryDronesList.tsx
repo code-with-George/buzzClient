@@ -1,4 +1,4 @@
-import { Bot, Plane, Camera, Radio, Truck, Radar, ChevronRight, History } from 'lucide-react';
+import { Bot, Plane, Camera, Radio, Truck, Radar, ChevronLeft, History } from 'lucide-react';
 import { useApp, Coordinates } from '@/store/AppContext';
 import { trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
@@ -18,6 +18,20 @@ const droneIcons: Record<string, React.ReactNode> = {
   default: <Bot className="h-5 w-5" />,
 };
 
+// Drone type translations
+const droneTypeHebrew: Record<string, string> = {
+  patrol: 'סיור',
+  survey: 'מיפוי',
+  camera: 'צילום',
+  recon: 'סיור',
+  cargo: 'מטען',
+  relay: 'תקשורת',
+  surveillance: 'מעקב',
+  scout: 'סיור',
+  stealth: 'התגנבות',
+  general: 'כללי',
+};
+
 export function HistoryDronesList() {
   const { dispatch } = useApp();
   const flightHistory = trpc.flight.getHistory.useQuery();
@@ -33,6 +47,7 @@ export function HistoryDronesList() {
     drone_lat: number;
     drone_lng: number;
     operational_area: Coordinates[];
+    status: 'Launched' | 'Not Launched';
   }) => {
     // Select drone with all saved configuration
     dispatch({
@@ -76,11 +91,11 @@ export function HistoryDronesList() {
     const diffHours = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHours / 24);
 
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
+    if (diffMins < 1) return 'עכשיו';
+    if (diffMins < 60) return `לפני ${diffMins} דק׳`;
+    if (diffHours < 24) return `לפני ${diffHours} שע׳`;
+    if (diffDays < 7) return `לפני ${diffDays} ימים`;
+    return date.toLocaleDateString('he-IL');
   };
 
   return (
@@ -89,50 +104,59 @@ export function HistoryDronesList() {
         <div className="flex items-center gap-2">
           <History className="h-4 w-4 text-muted-foreground" />
           <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Launch History
+            היסטוריית טיסות
           </span>
         </div>
         <span className="text-xs text-muted-foreground">
-          {flightHistory.data.length} flights
+          {flightHistory.data.length} {flightHistory.data.length === 1 ? 'טיסה' : 'טיסות'}
         </span>
       </div>
 
       <div className="space-y-2">
-        {flightHistory.data.map((flight) => (
-          <button
-            key={flight.id}
-            onClick={() => handleSelectFromHistory(flight)}
-            className={cn(
-              'w-full flex items-center gap-3 p-3 rounded-xl transition-all tap-target',
-              'bg-buzz-dark border border-transparent hover:border-buzz-purple',
-              'focus:outline-none focus:ring-2 focus:ring-buzz-purple focus:ring-offset-2 focus:ring-offset-buzz-dark-card'
-            )}
-          >
-            {/* Icon */}
-            <div className="p-2.5 bg-buzz-purple/20 rounded-xl text-buzz-purple">
-              {droneIcons[flight.drone_type] || droneIcons.default}
-            </div>
+        {flightHistory.data.map((flight) => {
+          const typeHebrew = droneTypeHebrew[flight.drone_type] || flight.drone_type;
+          
+          return (
+            <button
+              key={flight.id}
+              onClick={() => handleSelectFromHistory(flight)}
+              className={cn(
+                'w-full flex items-center gap-3 p-3 rounded-xl transition-all tap-target',
+                'bg-buzz-dark border border-transparent hover:border-buzz-purple',
+                'focus:outline-none focus:ring-2 focus:ring-buzz-purple focus:ring-offset-2 focus:ring-offset-buzz-dark-card'
+              )}
+            >
+              {/* Icon */}
+              <div className="p-2.5 bg-buzz-purple/20 rounded-xl text-buzz-purple">
+                {droneIcons[flight.drone_type] || droneIcons.default}
+              </div>
 
-            {/* Info */}
-            <div className="flex-1 text-left">
-              <h3 className="font-semibold">{flight.drone_name}</h3>
-              <p className="text-xs text-muted-foreground">
-                {flight.drone_type.charAt(0).toUpperCase() + flight.drone_type.slice(1)} • 
-                Alt: {flight.drone_altitude}m • {flight.operational_area.length} pts
-              </p>
-            </div>
+              {/* Info */}
+              <div className="flex-1 text-right">
+                <h3 className="font-semibold">{flight.drone_name}</h3>
+                <p className="text-xs text-muted-foreground">
+                  {typeHebrew} • 
+                  גובה: {flight.drone_altitude} מ׳ • {flight.operational_area.length} נק׳
+                </p>
+              </div>
 
-            {/* Time */}
-            <div className="text-right">
-              <p className="text-xs text-buzz-green font-semibold">LAUNCHED</p>
-              <p className="text-xs text-muted-foreground">
-                {formatDate(flight.created_at)}
-              </p>
-            </div>
+              {/* Time */}
+              <div className="text-left">
+                <p className={cn(
+                  "text-xs font-semibold",
+                  flight.status === 'Launched' ? 'text-buzz-green' : 'text-buzz-orange'
+                )}>
+                  {flight.status === 'Launched' ? 'שוגר' : 'בוטל'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {formatDate(flight.created_at)}
+                </p>
+              </div>
 
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-          </button>
-        ))}
+              <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+            </button>
+          );
+        })}
       </div>
     </div>
   );

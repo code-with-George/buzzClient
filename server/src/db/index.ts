@@ -250,7 +250,7 @@ class MockDatabase {
 
   getFlightHistory(userId: string): FlightHistory[] {
     return this.flightHistory
-      .filter(f => f.user_id === userId && f.status === 'Launched')
+      .filter(f => f.user_id === userId)
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 20);
   }

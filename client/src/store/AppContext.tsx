@@ -29,7 +29,7 @@ interface CalculationResult {
   calculatedAt: string;
 }
 
-type PlacementMode = 'none' | 'controller' | 'drone' | 'drawing';
+type PlacementMode = 'none' | 'controller' | 'drawing';
 type AppPhase = 'idle' | 'configuring' | 'calculating' | 'result';
 type ControlCenterStatus = 'idle' | 'sending' | 'approved' | 'not_approved';
 
@@ -182,7 +182,7 @@ function appReducer(state: AppState, action: Action): AppState {
     case 'CLEAR_DRONE_AREA':
       return {
         ...state,
-        droneConfig: { ...state.droneConfig, drawnArea: null },
+        droneConfig: { ...state.droneConfig, drawnArea: null, location: null },
       };
     case 'SET_PHASE':
       return { ...state, phase: action.payload };

@@ -33,13 +33,27 @@
   }
   
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Heebo', system-ui, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
     -webkit-tap-highlight-color: transparent;
   }
 
   html, body, #root {
     @apply h-full w-full overflow-hidden;
+    direction: rtl;
+  }
+
+  /* RTL-friendly text alignment defaults */
+  h1, h2, h3, h4, h5, h6, p, span, div, label {
+    text-align: start;
+  }
+
+  /* Monospace elements (numbers, codes) stay LTR but within RTL context */
+  .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+    direction: ltr;
+    unicode-bidi: embed;
   }
 }
 
@@ -72,11 +86,41 @@
     background: hsl(var(--border));
     border-radius: 3px;
   }
+
+  /* RTL utility classes */
+  .start-0 {
+    inset-inline-start: 0;
+  }
+
+  .end-0 {
+    inset-inline-end: 0;
+  }
+
+  .ms-auto {
+    margin-inline-start: auto;
+  }
+
+  .me-auto {
+    margin-inline-end: auto;
+  }
+
+  .ps-4 {
+    padding-inline-start: 1rem;
+  }
+
+  .pe-4 {
+    padding-inline-end: 1rem;
+  }
+
+  /* Flip icons for RTL */
+  .rtl-flip {
+    transform: scaleX(-1);
+  }
 }
 
 /* OpenLayers overrides for dark mode */
 .ol-viewport {
-  font-family: inherit;
+  font-family: 'Heebo', system-ui, sans-serif;
 }
 
 .ol-popup {
@@ -149,3 +193,34 @@
   animation: status-pulse 2s ease-in-out infinite;
 }
 
+/* Slide up animation */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+/* Fade in animation */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out;
+}

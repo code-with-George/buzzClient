@@ -23,7 +23,6 @@ export function ConfigurationForm() {
   
   // Location picker state
   const [showControllerPicker, setShowControllerPicker] = useState(false);
-  const [showDronePicker, setShowDronePicker] = useState(false);
   
   // Mutations
   const calculateMutation = trpc.flight.calculate.useMutation();
@@ -34,14 +33,14 @@ export function ConfigurationForm() {
   });
 
   const controllerLocationSet = !!state.controllerConfig.location;
-  const droneLocationSet = !!state.droneConfig.location;
   const droneAreaSet = !!state.droneConfig.drawnArea && state.droneConfig.drawnArea.length > 2;
+  // Drone location is automatically set when area is drawn (centroid)
+  const droneLocationSet = !!state.droneConfig.location;
   
   const canSubmit = 
     controllerAltitude > 0 &&
     controllerLocationSet &&
     droneAltitude > 0 &&
-    droneLocationSet &&
     droneAreaSet;
 
   const handleClose = () => {
@@ -88,7 +87,7 @@ export function ConfigurationForm() {
   };
 
   const handleSubmit = async () => {
-    if (!canSubmit || !state.selectedDrone || !state.droneConfig.drawnArea) return;
+    if (!canSubmit || !state.selectedDrone || !state.droneConfig.drawnArea || !state.droneConfig.location) return;
     
     // Close form and show calculating
     dispatch({ type: 'SET_CONFIG_FORM_OPEN', payload: false });
@@ -105,8 +104,8 @@ export function ConfigurationForm() {
         },
         drone: {
           altitude: droneAltitude,
-          lat: state.droneConfig.location!.lat,
-          lng: state.droneConfig.location!.lng,
+          lat: state.droneConfig.location.lat,
+          lng: state.droneConfig.location.lng,
           area: state.droneConfig.drawnArea,
         },
       });
@@ -136,16 +135,6 @@ export function ConfigurationForm() {
     }
   };
 
-  const handleDroneLocationSelect = (method: 'current' | 'map') => {
-    setShowDronePicker(false);
-    
-    if (method === 'current' && state.userLocation) {
-      dispatch({ type: 'SET_DRONE_LOCATION', payload: state.userLocation });
-    } else if (method === 'map') {
-      dispatch({ type: 'SET_PLACEMENT_MODE', payload: 'drone' });
-    }
-  };
-
   // Check if we're in placement mode (user is selecting location or drawing on map)
   const isInPlacementMode = state.placementMode !== 'none';
 
@@ -166,11 +155,11 @@ export function ConfigurationForm() {
         {/* Header */}
         <div className="px-5 pb-4 flex items-start justify-between">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">CONFIGURATION</h2>
+            <h2 className="text-2xl font-bold tracking-tight">הגדרות</h2>
             <div className="flex items-center gap-2 mt-1">
               <span className="h-2 w-2 rounded-full bg-buzz-green" />
               <span className="text-sm text-muted-foreground">
-                Drone ID: {state.selectedDrone?.name} · Connected
+                מזהה רחפן: {state.selectedDrone?.name} · מחובר
               </span>
             </div>
           </div>
@@ -188,24 +177,25 @@ export function ConfigurationForm() {
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-buzz-purple">
               <ControllerIcon size={20} />
-              <span className="text-sm font-bold tracking-wider uppercase">Remote Controller</span>
+              <span className="text-sm font-bold tracking-wider uppercase">שלט רחוק</span>
             </div>
 
             {/* Controller Altitude */}
             <div className="space-y-2">
-              <Label>ALTITUDE</Label>
+              <Label>גובה</Label>
               <div className="flex items-center gap-3">
                 <div className="relative flex-1">
                   <Input
                     type="number"
                     value={controllerAltitude}
                     onChange={(e) => handleControllerAltitudeChange(parseFloat(e.target.value) || 0)}
-                    className="pr-10 font-mono"
+                    className="pe-10 font-mono"
                     min={0}
                     step={0.1}
+                    dir="ltr"
                   />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                    M
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                    מ׳
                   </span>
                 </div>
                 
@@ -223,7 +213,7 @@ export function ConfigurationForm() {
               {/* Location status */}
               {controllerLocationSet && (
                 <p className="text-xs text-buzz-green">
-                  ✓ Location set: {formatCoordinates(state.controllerConfig.location!.lat, state.controllerConfig.location!.lng)}
+                  ✓ מיקום נקבע: {formatCoordinates(state.controllerConfig.location!.lat, state.controllerConfig.location!.lng)}
                 </p>
               )}
             </div>
@@ -236,12 +226,12 @@ export function ConfigurationForm() {
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-buzz-purple">
               <DroneIcon size={20} />
-              <span className="text-sm font-bold tracking-wider uppercase">Drone</span>
+              <span className="text-sm font-bold tracking-wider uppercase">רחפן</span>
             </div>
 
             {/* Drone Altitude */}
             <div className="space-y-2">
-              <Label>MAX ALTITUDE</Label>
+              <Label>גובה מקסימלי</Label>
               <div className="flex items-center gap-3">
                 <div className="relative flex-1">
                   <Input
@@ -250,6 +240,7 @@ export function ConfigurationForm() {
                     onChange={(e) => handleDroneAltitudeChange(parseFloat(e.target.value) || 0)}
                     className="font-mono"
                     min={0}
+                    dir="ltr"
                   />
                 </div>
                 
@@ -258,47 +249,24 @@ export function ConfigurationForm() {
                   value={altitudeUnit}
                   onValueChange={(value) => value && setAltitudeUnit(value as Unit)}
                 >
-                  <ToggleGroupItem value="M">M</ToggleGroupItem>
-                  <ToggleGroupItem value="FT">FT</ToggleGroupItem>
+                  <ToggleGroupItem value="M">מ׳</ToggleGroupItem>
+                  <ToggleGroupItem value="FT">רגל</ToggleGroupItem>
                 </ToggleGroup>
               </div>
             </div>
 
-            {/* Drone Location */}
-            <div className="space-y-2">
-              <Label>DRONE LOCATION</Label>
-              <div className="flex items-center gap-3">
-                <Button
-                  variant={droneLocationSet ? 'success' : 'secondary'}
-                  className="flex-1 h-12"
-                  onClick={() => setShowDronePicker(true)}
-                  disabled={!controllerLocationSet}
-                >
-                  <MapPin className="h-5 w-5 mr-2" />
-                  {droneLocationSet ? 'Location Set' : 'Pin Drone Location'}
-                </Button>
-              </div>
-              
-              {/* Location status */}
-              {droneLocationSet && (
-                <p className="text-xs text-buzz-green">
-                  ✓ Location: {formatCoordinates(state.droneConfig.location!.lat, state.droneConfig.location!.lng)}
-                </p>
-              )}
-            </div>
-
             {/* Draw Operational Area */}
             <div className="space-y-2">
-              <Label>OPERATIONAL AREA</Label>
+              <Label>אזור פעולה</Label>
               <div className="flex items-center gap-3">
                 <Button
                   variant={droneAreaSet ? 'success' : 'secondary'}
                   className="flex-1 h-12"
                   onClick={handleStartDrawing}
-                  disabled={!droneLocationSet}
+                  disabled={!controllerLocationSet}
                 >
-                  <PenTool className="h-5 w-5 mr-2" />
-                  {droneAreaSet ? 'Redraw Area' : 'Draw Area on Map'}
+                  <PenTool className="h-5 w-5 ms-2" />
+                  {droneAreaSet ? 'שרטט מחדש' : 'שרטט אזור על המפה'}
                 </Button>
                 
                 {droneAreaSet && (
@@ -314,14 +282,16 @@ export function ConfigurationForm() {
               </div>
               
               {/* Area status */}
-              {droneAreaSet && (
+              {droneAreaSet && droneLocationSet && (
                 <p className="text-xs text-buzz-green">
-                  ✓ Area defined with {state.droneConfig.drawnArea!.length} points
+                  ✓ אזור הוגדר עם {state.droneConfig.drawnArea!.length} נקודות
+                  <br />
+                  ✓ רחפן ממוקם במרכז: {formatCoordinates(state.droneConfig.location!.lat, state.droneConfig.location!.lng)}
                 </p>
               )}
-              {!droneAreaSet && droneLocationSet && (
+              {!droneAreaSet && controllerLocationSet && (
                 <p className="text-xs text-muted-foreground">
-                  Draw a polygon on the map to define the operational area
+                  שרטט מצולע על המפה כדי להגדיר את אזור הפעולה
                 </p>
               )}
             </div>
@@ -338,13 +308,13 @@ export function ConfigurationForm() {
           >
             {calculateMutation.isPending ? (
               <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Calculating...
+                <Loader2 className="ms-2 h-5 w-5 animate-spin" />
+                מחשב...
               </>
             ) : (
               <>
-                <Rocket className="mr-2 h-5 w-5" />
-                ENGAGE SYSTEMS
+                <Rocket className="ms-2 h-5 w-5" />
+                הפעל מערכות
               </>
             )}
           </Button>
@@ -356,36 +326,26 @@ export function ConfigurationForm() {
             className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-buzz-purple transition-colors py-2 disabled:opacity-50"
           >
             <Bookmark className={cn("h-4 w-4", pinDrone.isSuccess && "fill-buzz-purple text-buzz-purple")} />
-            {pinDrone.isPending ? 'Saving...' : pinDrone.isSuccess ? 'Configuration Saved!' : 'Save Configuration as Template'}
+            {pinDrone.isPending ? 'שומר...' : pinDrone.isSuccess ? 'הגדרות נשמרו!' : 'שמור הגדרות כתבנית'}
           </button>
 
           <button
             onClick={handleClose}
             className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
           >
-            Cancel Configuration
+            ביטול הגדרות
           </button>
         </div>
       </div>
 
-      {/* Location picker modals */}
+      {/* Location picker modal */}
       {showControllerPicker && (
         <LocationPicker
-          title="CONTROLLER LOCATION"
-          subtitle="SET RETURN HOME COORDINATES"
+          title="מיקום השלט"
+          subtitle="קבע קואורדינטות לחזרה הביתה"
           currentLocation={state.userLocation}
           onSelect={handleControllerLocationSelect}
           onClose={() => setShowControllerPicker(false)}
-        />
-      )}
-
-      {showDronePicker && (
-        <LocationPicker
-          title="DRONE LOCATION"
-          subtitle="SET OPERATIONAL CENTER"
-          currentLocation={state.userLocation}
-          onSelect={handleDroneLocationSelect}
-          onClose={() => setShowDronePicker(false)}
         />
       )}
     </>

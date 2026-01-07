@@ -105,7 +105,7 @@ export default {
         spin: "spin 1s linear infinite",
       },
       fontFamily: {
-        sans: ["'DM Sans'", "system-ui", "sans-serif"],
+        sans: ["'Heebo'", "system-ui", "sans-serif"],
         mono: ["'JetBrains Mono'", "monospace"],
       },
     },

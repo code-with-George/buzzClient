@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Search, SlidersHorizontal } from 'lucide-react';
+import { Search, SlidersHorizontal, Crosshair } from 'lucide-react';
 import { useApp } from '@/store/AppContext';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -8,6 +8,7 @@ import { HistoryDronesList } from './HistoryDronesList';
 import { DroneSearchResults } from './DroneSearchResults';
 import { trpc } from '@/lib/trpc';
 import { debounce, clamp } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 const COLLAPSED_HEIGHT = 180;
 const EXPANDED_HEIGHT_RATIO = 0.75;
@@ -139,15 +140,34 @@ export function BottomSheet() {
     }
   };
 
+  const handleCenterOnUser = () => {
+    window.dispatchEvent(new CustomEvent('centerOnUser'));
+  };
+
   return (
-    <div
-      ref={sheetRef}
-      className="absolute left-4 right-4 bottom-4 z-20 bg-buzz-dark-card rounded-3xl border border-buzz-dark-border shadow-2xl overflow-hidden safe-area-bottom"
-      style={{
-        height: sheetHeight,
-        transition: isDragging ? 'none' : 'height 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-      }}
-    >
+    <>
+      {/* Map control button - sticks above the sheet */}
+      <Button
+        variant="secondary"
+        size="icon"
+        className="absolute left-4 z-20 h-12 w-12 rounded-xl shadow-lg"
+        style={{
+          bottom: sheetHeight + 16 + 16, // sheet height + sheet bottom margin + gap
+          transition: isDragging ? 'none' : 'bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
+        onClick={handleCenterOnUser}
+      >
+        <Crosshair className="h-5 w-5" />
+      </Button>
+
+      <div
+        ref={sheetRef}
+        className="absolute right-4 left-4 bottom-4 z-20 bg-buzz-dark-card rounded-3xl border border-buzz-dark-border shadow-2xl overflow-hidden safe-area-bottom"
+        style={{
+          height: sheetHeight,
+          transition: isDragging ? 'none' : 'height 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
+      >
       {/* Drag handle */}
       <div
         className="flex justify-center py-3 cursor-grab active:cursor-grabbing"
@@ -162,7 +182,7 @@ export function BottomSheet() {
 
       {/* Header */}
       <div className="px-4 pb-3 flex items-center justify-between">
-        <h2 className="text-xl font-bold tracking-tight">Fleet Command</h2>
+        <h2 className="text-xl font-bold tracking-tight">מרכז הפיקוד</h2>
         <button className="p-2 hover:bg-buzz-dark-border rounded-lg transition-colors">
           <SlidersHorizontal className="h-5 w-5 text-muted-foreground" />
         </button>
@@ -171,7 +191,7 @@ export function BottomSheet() {
       {/* Search input */}
       <div className="px-4 pb-4">
         <Input
-          placeholder="Enter Drone ID or Name..."
+          placeholder="הזן מזהה רחפן או שם..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           icon={<Search className="h-4 w-4" />}
@@ -215,6 +235,6 @@ export function BottomSheet() {
         </div>
       </ScrollArea>
     </div>
+    </>
   );
 }
-

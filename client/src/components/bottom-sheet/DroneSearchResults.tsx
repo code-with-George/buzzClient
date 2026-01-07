@@ -1,8 +1,22 @@
 import React from 'react';
-import { Bot, Loader2, SearchX, ChevronRight, Bookmark } from 'lucide-react';
+import { Bot, Loader2, SearchX, ChevronLeft, Bookmark } from 'lucide-react';
 import { useApp } from '@/store/AppContext';
 import { trpc } from '@/lib/trpc';
 import { cn, getBatteryColor } from '@/lib/utils';
+
+// Drone type translations
+const droneTypeHebrew: Record<string, string> = {
+  patrol: 'סיור',
+  survey: 'מיפוי',
+  camera: 'צילום',
+  recon: 'סיור',
+  cargo: 'מטען',
+  relay: 'תקשורת',
+  surveillance: 'מעקב',
+  scout: 'סיור',
+  stealth: 'התגנבות',
+  general: 'כללי',
+};
 
 interface DroneSearchResultsProps {
   results: Array<{
@@ -71,7 +85,7 @@ export function DroneSearchResults({ results, isLoading, query }: DroneSearchRes
       <div className="flex flex-col items-center justify-center py-12">
         <Loader2 className="h-8 w-8 text-buzz-purple animate-spin mb-3" />
         <p className="text-sm text-muted-foreground">
-          {query ? 'Searching fleet...' : 'Loading drones...'}
+          {query ? 'מחפש בצי הרחפנים...' : 'טוען רחפנים...'}
         </p>
       </div>
     );
@@ -81,9 +95,9 @@ export function DroneSearchResults({ results, isLoading, query }: DroneSearchRes
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <SearchX className="h-12 w-12 text-muted-foreground mb-3" />
-        <p className="text-sm text-muted-foreground mb-1">No drones found</p>
+        <p className="text-sm text-muted-foreground mb-1">לא נמצאו רחפנים</p>
         <p className="text-xs text-muted-foreground">
-          {query ? 'Try searching with a different name or ID' : 'No drones available'}
+          {query ? 'נסה לחפש בשם או מזהה אחר' : 'אין רחפנים זמינים'}
         </p>
       </div>
     );
@@ -95,90 +109,94 @@ export function DroneSearchResults({ results, isLoading, query }: DroneSearchRes
     <div>
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          {isShowingAll ? 'Available Drones' : 'Search Results'}
+          {isShowingAll ? 'רחפנים זמינים' : 'תוצאות חיפוש'}
         </span>
         <span className="text-xs text-muted-foreground">
-          {results.length} {isShowingAll ? 'drones' : 'found'}
+          {results.length} {isShowingAll ? 'רחפנים' : 'נמצאו'}
         </span>
       </div>
 
       <div className="space-y-2">
-        {results.map((drone) => (
-          <button
-            key={drone.id}
-            onClick={() => handleSelectDrone(drone)}
-            className={cn(
-              'w-full flex items-center gap-3 p-3 rounded-xl transition-all tap-target',
-              'bg-buzz-dark border border-transparent hover:border-buzz-purple',
-              'focus:outline-none focus:ring-2 focus:ring-buzz-purple focus:ring-offset-2 focus:ring-offset-buzz-dark-card'
-            )}
-          >
-            {/* Icon */}
-            <div className="p-2.5 bg-buzz-purple/20 rounded-xl text-buzz-purple">
-              <Bot className="h-5 w-5" />
-            </div>
-
-            {/* Info */}
-            <div className="flex-1 text-left">
-              <h3 className="font-semibold">
-                {/* Highlight matching text */}
-                {highlightMatch(drone.name, query)}
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                {drone.type.charAt(0).toUpperCase() + drone.type.slice(1)} •{' '}
-                <span className={cn(
-                  drone.status === 'available' ? 'text-buzz-green' :
-                  drone.status === 'in_use' ? 'text-buzz-orange' :
-                  'text-buzz-red'
-                )}>
-                  {drone.status === 'available' ? 'Available' :
-                   drone.status === 'in_use' ? 'In Use' : 'Offline'}
-                </span>
-              </p>
-            </div>
-
-            {/* Battery */}
-            <div className="flex items-center gap-2">
-              <div className="w-12 h-1.5 bg-buzz-dark-border rounded-full overflow-hidden">
-                <div
-                  className={cn(
-                    'h-full rounded-full',
-                    drone.battery_level > 50
-                      ? 'bg-buzz-green'
-                      : drone.battery_level > 20
-                      ? 'bg-buzz-orange'
-                      : 'bg-buzz-red'
-                  )}
-                  style={{ width: `${drone.battery_level}%` }}
-                />
-              </div>
-              <span className={cn('text-xs font-mono', getBatteryColor(drone.battery_level))}>
-                {drone.battery_level}%
-              </span>
-            </div>
-
-            {/* Pin/Unpin Toggle button */}
+        {results.map((drone) => {
+          const typeHebrew = droneTypeHebrew[drone.type] || drone.type;
+          
+          return (
             <button
-              onClick={(e) => handleTogglePin(e, drone.id, drone.name)}
+              key={drone.id}
+              onClick={() => handleSelectDrone(drone)}
               className={cn(
-                'p-2 rounded-lg transition-all hover:bg-buzz-dark-border',
-                isDronePinned(drone.id) 
-                  ? 'text-buzz-purple' 
-                  : 'text-muted-foreground hover:text-buzz-purple'
+                'w-full flex items-center gap-3 p-3 rounded-xl transition-all tap-target',
+                'bg-buzz-dark border border-transparent hover:border-buzz-purple',
+                'focus:outline-none focus:ring-2 focus:ring-buzz-purple focus:ring-offset-2 focus:ring-offset-buzz-dark-card'
               )}
-              title={isDronePinned(drone.id) ? 'Remove from templates' : 'Save as template'}
             >
-              <Bookmark 
-                className={cn(
-                  'h-4 w-4',
-                  isDronePinned(drone.id) && 'fill-buzz-purple'
-                )} 
-              />
-            </button>
+              {/* Icon */}
+              <div className="p-2.5 bg-buzz-purple/20 rounded-xl text-buzz-purple">
+                <Bot className="h-5 w-5" />
+              </div>
 
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-          </button>
-        ))}
+              {/* Info */}
+              <div className="flex-1 text-right">
+                <h3 className="font-semibold">
+                  {/* Highlight matching text */}
+                  {highlightMatch(drone.name, query)}
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  {typeHebrew} •{' '}
+                  <span className={cn(
+                    drone.status === 'available' ? 'text-buzz-green' :
+                    drone.status === 'in_use' ? 'text-buzz-orange' :
+                    'text-buzz-red'
+                  )}>
+                    {drone.status === 'available' ? 'זמין' :
+                     drone.status === 'in_use' ? 'בשימוש' : 'לא מקוון'}
+                  </span>
+                </p>
+              </div>
+
+              {/* Battery */}
+              <div className="flex items-center gap-2">
+                <div className="w-12 h-1.5 bg-buzz-dark-border rounded-full overflow-hidden">
+                  <div
+                    className={cn(
+                      'h-full rounded-full',
+                      drone.battery_level > 50
+                        ? 'bg-buzz-green'
+                        : drone.battery_level > 20
+                        ? 'bg-buzz-orange'
+                        : 'bg-buzz-red'
+                    )}
+                    style={{ width: `${drone.battery_level}%` }}
+                  />
+                </div>
+                <span className={cn('text-xs font-mono', getBatteryColor(drone.battery_level))}>
+                  {drone.battery_level}%
+                </span>
+              </div>
+
+              {/* Pin/Unpin Toggle button */}
+              <button
+                onClick={(e) => handleTogglePin(e, drone.id, drone.name)}
+                className={cn(
+                  'p-2 rounded-lg transition-all hover:bg-buzz-dark-border',
+                  isDronePinned(drone.id) 
+                    ? 'text-buzz-purple' 
+                    : 'text-muted-foreground hover:text-buzz-purple'
+                )}
+                title={isDronePinned(drone.id) ? 'הסר מתבניות' : 'שמור כתבנית'}
+              >
+                <Bookmark 
+                  className={cn(
+                    'h-4 w-4',
+                    isDronePinned(drone.id) && 'fill-buzz-purple'
+                  )} 
+                />
+              </button>
+
+              <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -201,4 +219,3 @@ function highlightMatch(text: string, query: string) {
     )
   );
 }
-

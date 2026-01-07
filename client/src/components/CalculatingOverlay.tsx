@@ -22,7 +22,7 @@ export function CalculatingOverlay() {
         <div className="flex items-center gap-3">
           <Loader2 className="h-5 w-5 text-buzz-purple animate-spin" />
           <span className="text-lg font-semibold tracking-wider uppercase">
-            Calculating
+            מחשב
           </span>
         </div>
 
@@ -41,10 +41,9 @@ export function CalculatingOverlay() {
 
         {/* Subtitle */}
         <p className="text-sm text-muted-foreground mt-4 text-center max-w-xs">
-          Analyzing communication zones and signal strength...
+          מנתח אזורי תקשורת ועוצמת אות...
         </p>
       </div>
     </div>
   );
 }
-
