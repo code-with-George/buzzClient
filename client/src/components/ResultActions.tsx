@@ -168,8 +168,8 @@ export function ResultActions() {
               onClick={handleEndClick}
               className="w-full"
             >
-              <LogOut className="ms-2 h-5 w-5" />
               סיום
+              <LogOut className="ms-2 h-5 w-5" />
             </Button>
           </div>
         </div>
@@ -227,7 +227,7 @@ export function ResultActions() {
                 className="w-full justify-start gap-3 h-16"
               >
                 <Users className="h-6 w-6 text-buzz-purple" />
-                <span className="text-base">מישהו אחר סיים את הטיסה</span>
+                <span className="text-base">הטיסה הסתיימה עקב שיבושים</span>
               </Button>
             </div>
           </DialogContent>
@@ -240,41 +240,22 @@ export function ResultActions() {
   return (
     <div className="absolute inset-x-0 bottom-0 z-30 safe-area-bottom">
       <div className="mx-4 mb-4 space-y-3">
-        {/* Cancel Button */}
-        <Button
-          variant="destructive"
-          size="xl"
-          onClick={handleCancel}
-          className="w-full"
-          disabled={saveToHistory.isPending}
-        >
-          {saveToHistory.isPending ? (
-            <>
-              <Loader2 className="ms-2 h-5 w-5 animate-spin" />
-              מבטל...
-            </>
-          ) : (
-            <>
-              <X className="ms-2 h-5 w-5" />
-              ביטול
-            </>
-          )}
-        </Button>
 
-        {/* Send to Control Center Button */}
-        <Button
+                {/* Send to Control Center Button */}
+                <Button
           variant="secondary"
           size="xl"
           onClick={handleSendToControlCenter}
           className={`w-full ${controlCenterButton.className || ''}`}
           disabled={controlCenterButton.disabled}
         >
-          {controlCenterButton.icon}
           {controlCenterButton.text}
+          {controlCenterButton.icon}
         </Button>
 
-        {/* Launch Button */}
-        <Button
+        
+         {/* Launch Button */}
+         <Button
           size="xl"
           onClick={handleLaunch}
           className="w-full"
@@ -287,11 +268,37 @@ export function ResultActions() {
             </>
           ) : (
             <>
-              <Rocket className="ms-2 h-5 w-5" />
               שיגור
+              <Rocket className="ms-2 h-5 w-5" />
             </>
           )}
         </Button>
+
+
+        {/* Cancel Button */}
+        <Button
+          variant="destructive"
+          size="xl"
+          onClick={handleCancel}
+          className="w-full"
+          disabled={saveToHistory.isPending}
+        >
+          {saveToHistory.isPending ? (
+            <>
+              מבטל...
+              <Loader2 className="ms-2 h-5 w-5 animate-spin" />
+            </>
+          ) : (
+            <>
+              ביטול
+              <X className="ms-2 h-5 w-5" />
+            </>
+          )}
+        </Button>
+
+
+
+       
       </div>
     </div>
   );

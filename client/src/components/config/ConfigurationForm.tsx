@@ -253,7 +253,7 @@ export function ConfigurationForm() {
                     type="number"
                     value={droneAltitude}
                     onChange={(e) => handleDroneAltitudeChange(parseFloat(e.target.value) || 0)}
-                    className="font-mono"
+                    className="font-mono text-right"
                     min={0}
                     dir="ltr"
                   />

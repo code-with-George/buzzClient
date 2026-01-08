@@ -14,7 +14,11 @@ export function CalculatingOverlay() {
         <div className="relative mb-6">
           <div className="absolute inset-0 bg-buzz-purple rounded-full blur-xl opacity-50 animate-pulse" />
           <div className="relative p-6 bg-buzz-dark-card rounded-2xl border border-buzz-dark-border">
-            <DroneIcon size={48} className="text-buzz-purple" />
+          <img 
+            src="/../public/BUZZ.png" 
+            alt="לוגו באזז" 
+            className="h-24 w-auto animate-fade-in"
+          />
           </div>
         </div>
 

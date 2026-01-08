@@ -453,6 +453,37 @@ export function MapView() {
     <div className="absolute inset-0">
       <div ref={mapContainer} className="h-full w-full" />
 
+      {/* Flight active overlay - shows when drone is launched */}
+      {state.isLaunched && (
+        <div className="absolute inset-0 pointer-events-none z-10">
+          {/* Animated border glow */}
+          <div className="absolute inset-0 animate-pulse-slow">
+            <div className="absolute inset-0 border-[3px] border-amber-500/60 rounded-none" />
+            <div className="absolute inset-2 border-[2px] border-amber-500/30 rounded-none" />
+          </div>
+          
+          {/* Subtle amber tint overlay */}
+          <div className="absolute inset-0 bg-gradient-to-b from-amber-500/10 via-transparent to-amber-500/10" />
+          
+          {/* Corner indicators */}
+          <div className="absolute top-4 left-4 w-8 h-8 border-t-4 border-l-4 border-amber-500 animate-pulse" />
+          <div className="absolute top-4 right-4 w-8 h-8 border-t-4 border-r-4 border-amber-500 animate-pulse" />
+          <div className="absolute bottom-20 left-4 w-8 h-8 border-b-4 border-l-4 border-amber-500 animate-pulse" />
+          <div className="absolute bottom-20 right-4 w-8 h-8 border-b-4 border-r-4 border-amber-500 animate-pulse" />
+          
+          {/* Flight status badge */}
+          <div className="absolute top-24 left-1/2 -translate-x-1/2">
+            <div className="flex items-center gap-2 bg-amber-500/90 text-black px-4 py-2 rounded-full shadow-lg shadow-amber-500/30">
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-black opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-black"></span>
+              </span>
+              <span className="font-bold text-sm">רחפן באוויר</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Placement mode indicator */}
       {state.placementMode !== 'none' && (
         <div className="absolute top-24 left-1/2 -translate-x-1/2 z-20">

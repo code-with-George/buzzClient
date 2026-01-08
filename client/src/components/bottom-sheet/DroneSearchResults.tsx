@@ -131,17 +131,17 @@ export function DroneSearchResults({ results, isLoading, query }: DroneSearchRes
               )}
             >
               {/* Icon */}
-              <div className="p-2.5 bg-buzz-purple/20 rounded-xl text-buzz-purple">
+              <div className="p-2.5 bg-buzz-purple/20 rounded-xl text-buzz-purple text-right">
                 <Bot className="h-5 w-5" />
               </div>
 
               {/* Info */}
               <div className="flex-1 text-right">
-                <h3 className="font-semibold">
+                <h3 className="font-semibold text-right">
                   {/* Highlight matching text */}
                   {highlightMatch(drone.name, query)}
                 </h3>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground text-right">
                   {typeHebrew} •{' '}
                   <span className={cn(
                     drone.status === 'available' ? 'text-buzz-green' :
@@ -153,27 +153,6 @@ export function DroneSearchResults({ results, isLoading, query }: DroneSearchRes
                   </span>
                 </p>
               </div>
-
-              {/* Battery */}
-              <div className="flex items-center gap-2">
-                <div className="w-12 h-1.5 bg-buzz-dark-border rounded-full overflow-hidden">
-                  <div
-                    className={cn(
-                      'h-full rounded-full',
-                      drone.battery_level > 50
-                        ? 'bg-buzz-green'
-                        : drone.battery_level > 20
-                        ? 'bg-buzz-orange'
-                        : 'bg-buzz-red'
-                    )}
-                    style={{ width: `${drone.battery_level}%` }}
-                  />
-                </div>
-                <span className={cn('text-xs font-mono', getBatteryColor(drone.battery_level))}>
-                  {drone.battery_level}%
-                </span>
-              </div>
-
               {/* Pin/Unpin Toggle button */}
               <button
                 onClick={(e) => handleTogglePin(e, drone.id, drone.name)}

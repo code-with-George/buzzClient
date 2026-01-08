@@ -31,8 +31,8 @@ export function TopBar() {
           onClick={handleLogout}
           className="flex items-center gap-2 px-3 py-2 hover:bg-white/10 rounded-lg transition-colors tap-target text-muted-foreground hover:text-foreground"
         >
-          <LogOut className="h-4 w-4" />
           <span className="text-sm font-medium">התנתק</span>
+          <LogOut className="h-4 w-4" />
         </button>
       </div>
     </div>

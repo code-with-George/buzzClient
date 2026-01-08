@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, Phone, AtSign } from 'lucide-react';
+import { ArrowLeft, Loader2, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -44,18 +44,6 @@ export function Login() {
 
   return (
     <div className="min-h-screen bg-buzz-dark dot-grid flex flex-col">
-      {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 safe-area-top">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <AtSign className="h-4 w-4" />
-          <span className="font-mono text-xs tracking-wider">SYS.V.4.0</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-buzz-green status-online" />
-          <span className="text-sm font-medium">מקוון</span>
-        </div>
-      </header>
-
       {/* Main content */}
       <main className="flex-1 flex flex-col items-center justify-center px-6 pb-20">
         {/* Logo */}
@@ -135,18 +123,8 @@ export function Login() {
 
       {/* Footer */}
       <footer className="py-4 px-6 safe-area-bottom">
-        <div className="flex justify-center gap-4 mb-3">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className={`h-1 w-16 rounded-full ${
-                i === 3 ? 'bg-buzz-purple' : 'bg-buzz-dark-border'
-              }`}
-            />
-          ))}
-        </div>
         <p className="text-center text-xs text-muted-foreground font-mono tracking-wider">
-          חיבור מאובטח V4.2.0
+          V4.2.0
         </p>
       </footer>
     </div>
