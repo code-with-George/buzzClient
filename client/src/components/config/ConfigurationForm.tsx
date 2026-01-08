@@ -87,17 +87,24 @@ export function ConfigurationForm() {
         },
       });
 
-      dispatch({
-        type: 'SET_CALCULATION_RESULT',
-        payload: {
-          imageData: result.imageData,
-          calculatedAt: result.calculatedAt,
-        },
-      });
+      // Only dispatch result if still authenticated (user hasn't logged out)
+      // Check localStorage since state might be stale in the closure
+      if (localStorage.getItem('buzz-token')) {
+        dispatch({
+          type: 'SET_CALCULATION_RESULT',
+          payload: {
+            imageData: result.imageData,
+            calculatedAt: result.calculatedAt,
+          },
+        });
+      }
     } catch (error) {
       console.error('Calculation failed:', error);
-      dispatch({ type: 'SET_PHASE', payload: 'configuring' });
-      dispatch({ type: 'SET_CONFIG_FORM_OPEN', payload: true });
+      // Only restore state if still authenticated
+      if (localStorage.getItem('buzz-token')) {
+        dispatch({ type: 'SET_PHASE', payload: 'configuring' });
+        dispatch({ type: 'SET_CONFIG_FORM_OPEN', payload: true });
+      }
     }
   };
 
@@ -125,17 +132,24 @@ export function ConfigurationForm() {
         },
       });
 
-      dispatch({
-        type: 'SET_CALCULATION_RESULT',
-        payload: {
-          imageData: result.imageData,
-          calculatedAt: result.calculatedAt,
-        },
-      });
+      // Only dispatch result if still authenticated (user hasn't logged out)
+      // Check localStorage since state might be stale in the closure
+      if (localStorage.getItem('buzz-token')) {
+        dispatch({
+          type: 'SET_CALCULATION_RESULT',
+          payload: {
+            imageData: result.imageData,
+            calculatedAt: result.calculatedAt,
+          },
+        });
+      }
     } catch (error) {
       console.error('Eyesight calculation failed:', error);
-      dispatch({ type: 'SET_PHASE', payload: 'configuring' });
-      dispatch({ type: 'SET_CONFIG_FORM_OPEN', payload: true });
+      // Only restore state if still authenticated
+      if (localStorage.getItem('buzz-token')) {
+        dispatch({ type: 'SET_PHASE', payload: 'configuring' });
+        dispatch({ type: 'SET_CONFIG_FORM_OPEN', payload: true });
+      }
     }
   };
 

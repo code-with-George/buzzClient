@@ -96,7 +96,8 @@ type Action =
   | { type: 'SET_BOTTOM_SHEET_EXPANDED'; payload: boolean }
   | { type: 'SET_CONFIG_FORM_OPEN'; payload: boolean }
   | { type: 'SET_LAUNCHED'; payload: boolean }
-  | { type: 'RESET_DEPLOYMENT' };
+  | { type: 'RESET_DEPLOYMENT' }
+  | { type: 'LOGOUT' };
 
 const initialState: AppState = {
   isAuthenticated: false,
@@ -219,6 +220,13 @@ function appReducer(state: AppState, action: Action): AppState {
         controlCenterStatus: 'idle',
         isLaunched: false,
         isConfigFormOpen: false,
+      };
+    case 'LOGOUT':
+      // Reset ALL state to initial values on logout
+      return {
+        ...initialState,
+        // Keep user location as it's device-specific, not user-specific
+        userLocation: state.userLocation,
       };
     default:
       return state;

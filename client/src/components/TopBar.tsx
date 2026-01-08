@@ -9,10 +9,8 @@ export function TopBar() {
   const handleLogout = () => {
     localStorage.removeItem('buzz-token');
     localStorage.removeItem('buzz-user-id');
-    dispatch({
-      type: 'SET_AUTHENTICATED',
-      payload: { isAuthenticated: false, userId: null },
-    });
+    // LOGOUT action resets ALL state (including calculations, config, etc.)
+    dispatch({ type: 'LOGOUT' });
     navigate('/');
   };
 
