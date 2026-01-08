@@ -216,7 +216,7 @@ export const flightRouter = router({
       droneLat: z.number(),
       droneLng: z.number(),
       operationalArea: z.array(coordinateSchema),
-      status: z.enum(['Launched', 'Not Launched']),
+      status: z.enum(['Launched', 'Not Launched', 'Ended by operator', 'Ended by other']),
       controlCenterApproved: z.boolean().nullable(),
     }))
     .mutation(async ({ input, ctx }) => {

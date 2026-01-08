@@ -56,6 +56,9 @@ interface AppState {
   calculationResult: CalculationResult | null;
   controlCenterStatus: ControlCenterStatus;
   
+  // Launch state
+  isLaunched: boolean;
+  
   // UI state
   isBottomSheetExpanded: boolean;
   isConfigFormOpen: boolean;
@@ -92,6 +95,7 @@ type Action =
   | { type: 'SET_CONTROL_CENTER_STATUS'; payload: ControlCenterStatus }
   | { type: 'SET_BOTTOM_SHEET_EXPANDED'; payload: boolean }
   | { type: 'SET_CONFIG_FORM_OPEN'; payload: boolean }
+  | { type: 'SET_LAUNCHED'; payload: boolean }
   | { type: 'RESET_DEPLOYMENT' };
 
 const initialState: AppState = {
@@ -112,6 +116,7 @@ const initialState: AppState = {
   placementMode: 'none',
   calculationResult: null,
   controlCenterStatus: 'idle',
+  isLaunched: false,
   isBottomSheetExpanded: false,
   isConfigFormOpen: false,
 };
@@ -200,6 +205,8 @@ function appReducer(state: AppState, action: Action): AppState {
       return { ...state, isBottomSheetExpanded: action.payload };
     case 'SET_CONFIG_FORM_OPEN':
       return { ...state, isConfigFormOpen: action.payload };
+    case 'SET_LAUNCHED':
+      return { ...state, isLaunched: action.payload };
     case 'RESET_DEPLOYMENT':
       return {
         ...state,
@@ -210,6 +217,7 @@ function appReducer(state: AppState, action: Action): AppState {
         placementMode: 'none',
         calculationResult: null,
         controlCenterStatus: 'idle',
+        isLaunched: false,
         isConfigFormOpen: false,
       };
     default:

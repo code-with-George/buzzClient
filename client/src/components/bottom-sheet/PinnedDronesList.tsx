@@ -45,7 +45,6 @@ export function PinnedDronesList() {
     drone_altitude: number | null;
     drone_lat: number | null;
     drone_lng: number | null;
-    drone_radius: number | null;
   }) => {
     // Add to recently used
     addToRecent.mutate({ droneId: drone.drone_id, droneName: drone.drone_name });
@@ -75,7 +74,7 @@ export function PinnedDronesList() {
             location: drone.drone_lat !== null && drone.drone_lng !== null
               ? { lat: drone.drone_lat, lng: drone.drone_lng }
               : null,
-            radius: drone.drone_radius || 500,
+            drawnArea: null,
           },
         },
       });
@@ -98,7 +97,7 @@ export function PinnedDronesList() {
   }
 
   return (
-    <div className="mb-6">
+    <div className="mb-6" dir='rtl' >
       <div className="mb-3">
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           יחידות מוצמדות

@@ -121,24 +121,13 @@ export function HistoryDronesList() {
               key={flight.id}
               onClick={() => handleSelectFromHistory(flight)}
               className={cn(
-                'w-full flex flex-row-reverse items-center gap-3 p-3 rounded-xl transition-all tap-target',
+                'w-full flex items-center gap-3 p-3 rounded-xl transition-all tap-target',
                 'bg-buzz-dark border border-transparent hover:border-buzz-purple',
                 'focus:outline-none focus:ring-2 focus:ring-buzz-purple focus:ring-offset-2 focus:ring-offset-buzz-dark-card'
               )}
             >
-              {/* Icon */}
-              <div className="p-2.5 bg-buzz-purple/20 rounded-xl text-buzz-purple">
-                {droneIcons[flight.drone_type] || droneIcons.default}
-              </div>
-
-              {/* Info */}
-              <div className="flex-1 text-right">
-                <h3 className="font-semibold">{flight.drone_name}</h3>
-                <p className="text-xs text-muted-foreground">
-                  {typeHebrew} • 
-                  גובה: {flight.drone_altitude} מ׳ • {flight.operational_area.length} נק׳
-                </p>
-              </div>
+              {/* Arrow */}
+              <ChevronLeft className="h-4 w-4 text-muted-foreground" />
 
               {/* Time */}
               <div className="text-left">
@@ -153,7 +142,19 @@ export function HistoryDronesList() {
                 </p>
               </div>
 
-              <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+              {/* Info */}
+              <div className="flex-1 text-right">
+                <h3 className="font-semibold text-right">{flight.drone_name}</h3>
+                <p className="text-xs text-muted-foreground text-right">
+                  {typeHebrew} • 
+                  גובה: {flight.drone_altitude} מ׳ • {flight.operational_area.length} נק׳
+                </p>
+              </div>
+
+              {/* Icon */}
+              <div className="p-2.5 bg-buzz-purple/20 rounded-xl text-buzz-purple">
+                {droneIcons[flight.drone_type] || droneIcons.default}
+              </div>
             </button>
           );
         })}

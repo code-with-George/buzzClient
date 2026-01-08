@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, Lock, AtSign } from 'lucide-react';
+import { ArrowLeft, Loader2, Phone, AtSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,7 +35,7 @@ export function Login() {
     setError('');
     
     if (!serialNumber.trim()) {
-      setError('מספר סידורי נדרש');
+      setError('נדרש מספר אישי');
       return;
     }
 
@@ -79,7 +79,7 @@ export function Login() {
         <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-6">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="serial">מספר סידורי</Label>
+              <Label htmlFor="serial">מספר אישי</Label>
               <span className="text-xs font-mono text-buzz-purple bg-buzz-purple/10 px-2 py-0.5 rounded">
                 חובה
               </span>
@@ -88,7 +88,6 @@ export function Login() {
               <Input
                 id="serial"
                 type="text"
-                placeholder="לדוגמא: X7-99-ALPHA"
                 value={serialNumber}
                 onChange={(e) => setSerialNumber(e.target.value.toUpperCase())}
                 className="font-mono text-base pe-8"
@@ -125,13 +124,13 @@ export function Login() {
           </Button>
         </form>
 
-        {/* Help link */}
-        <button className="mt-8 flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-          <Lock className="h-4 w-4" />
-          <span className="text-sm underline underline-offset-4">
-            מערכת נעולה? צור קשר עם מרכז השליטה
+        {/* Help text */}
+        <div className="mt-8 flex items-center gap-2 text-muted-foreground">
+          <Phone className="h-4 w-4" />
+          <span className="text-sm">
+            בעיה בהתחברות? התקשר למוקד החירום *5765
           </span>
-        </button>
+        </div>
       </main>
 
       {/* Footer */}

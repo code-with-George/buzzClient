@@ -187,7 +187,7 @@ export function ConfigurationForm() {
         </div>
 
         {/* Form content */}
-        <div className="px-5 pb-6 space-y-6 max-h-[60vh] overflow-y-auto scrollbar-thin">
+        <div className="px-5 pb-6 space-y-6 max-h-[60vh] overflow-y-auto scrollbar-thin align-top">
           {/* Section 1: Remote Controller */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-buzz-purple">
@@ -204,7 +204,7 @@ export function ConfigurationForm() {
                     type="number"
                     value={controllerAltitude}
                     onChange={(e) => handleControllerAltitudeChange(parseFloat(e.target.value) || 0)}
-                    className="pe-10 font-mono"
+                    className="pe-10 font-mono text-right"
                     min={0}
                     step={0.1}
                     dir="ltr"
@@ -271,8 +271,8 @@ export function ConfigurationForm() {
             </div>
 
             {/* Draw Operational Area */}
+            <Label>אזור פעולה</Label>
             <div className="space-y-2">
-              <Label>אזור פעולה</Label>
               <div className="flex items-center gap-3">
                 <Button
                   variant={droneAreaSet ? 'success' : 'secondary'}
@@ -314,12 +314,12 @@ export function ConfigurationForm() {
         </div>
 
         {/* Actions */}
-        <div className="px-5 pb-6 space-y-3">
+        <div className="px-5 pt-2.5 pb-1 space-y-3">
           <div className="flex gap-3">
             <Button
               onClick={handleSubmit}
               size="xl"
-              className="flex-1"
+              className="flex-1 text-right"
               disabled={!canSubmit || calculateMutation.isPending || calculateEyesightMutation.isPending}
             >
               {calculateMutation.isPending ? (
@@ -329,8 +329,8 @@ export function ConfigurationForm() {
                 </>
               ) : (
                 <>
+                      הפעל מערכות
                   <Rocket className="ms-2 h-5 w-5" />
-                  הפעל מערכות
                 </>
               )}
             </Button>
@@ -349,8 +349,8 @@ export function ConfigurationForm() {
                 </>
               ) : (
                 <>
+                                 קו ראייה
                   <Eye className="ms-2 h-5 w-5" />
-                  קו ראייה
                 </>
               )}
             </Button>
